@@ -1,12 +1,12 @@
 {
-  "name": "mission-control-mcp",
+  "name": "kryo-mcp",
   "version": "0.1.0",
   "private": true,
   "description": "Self-hosted MCP server for AI-powered developer workflow orchestration across Fizzy, Campfire, and GitHub.",
   "type": "module",
   "packageManager": "pnpm@10.0.0",
   "bin": {
-    "mission-control-mcp": "./build/src/index.js"
+    "kryo-mcp": "./build/src/index.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -16,10 +16,10 @@
     "test": "pnpm run build && node --test build/tests/**/*.test.js",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "sample-service:build": "pnpm --filter mission-control-sample-service run build",
-    "sample-service:dev": "pnpm --filter mission-control-sample-service run dev",
-    "sample-service:test": "pnpm --filter mission-control-sample-service run test",
-    "sample-service:test:demo": "pnpm --filter mission-control-sample-service run test:demo"
+    "demo-service:build": "pnpm --filter kryo-demo-service run build",
+    "demo-service:dev": "pnpm --filter kryo-demo-service run dev",
+    "demo-service:test": "pnpm --filter kryo-demo-service run test",
+    "demo-service:test:demo": "pnpm --filter kryo-demo-service run test:demo"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

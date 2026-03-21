@@ -57,7 +57,7 @@ export function registerCampfireBotRoutes(
       response
         .type("text/plain")
         .send(
-          `Mission Control bot error: ${
+          `Kryo bot error: ${
             error instanceof Error ? error.message : String(error)
           }`,
         );
@@ -69,13 +69,13 @@ function hasAuthorizedBoundarySecret(
   request: Request,
   services: MissionControlServices,
 ): boolean {
-  const secret = services.config.bot.sharedSecret;
+  const secret = services.config.bot.auth.sharedSecret;
 
   if (!secret) {
     return true;
   }
 
-  const provided = request.get(services.config.bot.sharedSecretHeader);
+  const provided = request.get(services.config.bot.auth.headerName);
 
   if (!provided) {
     return false;

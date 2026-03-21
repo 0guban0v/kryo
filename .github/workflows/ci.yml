@@ -40,11 +40,11 @@ jobs:
       - name: Run workflow tests
         run: pnpm test
 
-      - name: Run sample-service tests
-        run: pnpm run sample-service:test
+      - name: Run demo-service tests
+        run: pnpm run demo-service:test
 
       - name: Build main service container
-        run: docker build -t mission-control-mcp:test .
+        run: docker build -t kryo-mcp:test .
 
-      - name: Build sample-service container
-        run: docker build -f sample-service/Dockerfile -t mission-control-sample-service:test .
+      - name: Build demo-service container
+        run: docker build -f examples/demo-service/Dockerfile -t kryo-demo-service:test .

@@ -21,6 +21,7 @@ export async function pickUpWork(
   options: NotificationOptions = {},
 ): Promise<WorkflowResult> {
   const boardId = services.fizzy.resolveBoardId(input.boardId);
+  const workflow = services.config.workflow;
   const priorityTag = input.priorityTag
     ? normalizeName(input.priorityTag)
     : null;
@@ -28,7 +29,7 @@ export async function pickUpWork(
     input.assigneeId
       ? Promise.resolve({ id: input.assigneeId, name: input.assigneeId })
       : services.fizzy.getCurrentUser(),
-    services.fizzy.findColumnByName(boardId, "To Do"),
+    services.fizzy.findColumnByName(boardId, workflow.todoColumnName),
     services.fizzy.listBoardCards(boardId, {
       sortedBy: "oldest",
       assignmentStatus: "unassigned",
@@ -53,7 +54,7 @@ export async function pickUpWork(
       summary: "No unassigned work item matched the requested queue.",
       markdown: joinSections([
         heading("Pick Up Work", 2),
-        "No unassigned card was found in the `To Do` queue.",
+        `No unassigned card was found in the \`${workflow.todoColumnName}\` queue.`,
         input.priorityTag ? `Priority tag filter: ${input.priorityTag}` : null,
       ]),
     };
@@ -66,7 +67,7 @@ export async function pickUpWork(
   const moved = await moveCardToTarget(
     services,
     assignedCard,
-    input.targetColumnName ?? "In Progress",
+    input.targetColumnName ?? workflow.inProgressColumnName,
   );
 
   const summary = `Picked up ${cardLabel(moved.card)} and moved it to ${moved.destinationLabel}.`;
@@ -82,7 +83,7 @@ export async function pickUpWork(
     markdown: joinSections([
       heading("Picked Up Work", 2),
       `Assigned to ${currentUser.name} and moved to ${moved.destinationLabel}.`,
-      cardDetailsMarkdown(moved.card),
+      cardDetailsMarkdown(services, moved.card),
     ]),
   };
 }

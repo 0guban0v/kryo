@@ -38,7 +38,7 @@ MCP stays transport-oriented and independent of any one model provider.
 ## Questions To Resolve During Iteration
 
 1. TypeScript remains the current implementation language, but should Go or Python be a future alternative track?
-2. Which HTTP transport should be treated as the default deployed mode: streamable HTTP or SSE?
+2. Is `streamable-http` sufficient as the only deployed MCP HTTP transport, or is there a concrete client compatibility reason to add another transport later?
 3. Which cloud deployment example should be added first under `deploy/`: Kubernetes, ECS, or Nomad?
 4. Which git forge should be the first validation target after the initial happy path: GitHub, GHES, or Gitea?
 5. What is the minimum viable persistence model for the local stack versus a cloud deployment?

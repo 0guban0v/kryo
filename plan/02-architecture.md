@@ -24,9 +24,9 @@ The architecture is container-first. The same images and environment-driven conf
 ```text
 MCP client
   -> stdio for local workflows
-  -> streamable HTTP or SSE for deployed workflows
+  -> streamable HTTP for deployed workflows
 
-OCI container: mission-control-mcp
+OCI container: kryo-mcp
   - MCP server
   - Campfire bot webhook handler
   - workflow orchestrator
@@ -35,7 +35,7 @@ OCI container: mission-control-mcp
 Downstream services
   - Fizzy container
   - Campfire container
-  - sample-service container
+  - demo-service container
   - Git forge API endpoint
   - Infisical control plane
 ```
@@ -56,8 +56,8 @@ These entry points should sit behind TLS termination and authentication controls
 
 ### Private Application Network
 
-- `mission-control-mcp`
-- `sample-service`
+- `kryo-mcp`
+- `examples/demo-service`
 - Fizzy
 - Campfire
 - Infisical
@@ -86,7 +86,7 @@ Baseline hardening options:
 1. The agent picks up a Fizzy card from a target column.
 2. The workflow assigns or moves the card and posts a Campfire update.
 3. The agent edits code in the repo volume or mounted workspace.
-4. Tests run inside the `sample-service` container or an ephemeral test container.
+4. Tests run inside the `demo-service` container or an ephemeral test container.
 5. The workflow creates a pull request on the configured git forge.
 6. If checks pass, the workflow merges the PR and moves the card to `Done`.
 7. If checks fail, the workflow moves the card to `Blocked`, comments in Fizzy, and notifies Campfire.
@@ -94,7 +94,7 @@ Baseline hardening options:
 ## Repository Layout
 
 ```text
-mission-control-mcp/
+kryo-mcp/
 ├── Dockerfile
 ├── docker-compose.yml
 ├── deploy/
@@ -111,7 +111,8 @@ mission-control-mcp/
 │   ├── workflows/
 │   ├── config.ts
 │   └── types.ts
-├── sample-service/
+├── examples/
+│   └── demo-service/
 │   ├── Dockerfile
 │   ├── src/
 │   ├── tests/
@@ -122,14 +123,14 @@ mission-control-mcp/
 
 ## Service Boundaries
 
-### `mission-control-mcp`
+### `kryo-mcp`
 
 - owns MCP transport
 - owns Campfire bot webhook handling
 - owns workflow orchestration
 - calls the external service adapters
 
-### `sample-service`
+### `examples/demo-service`
 
 - intentionally small demo app
 - provides a concrete coding target for the agent

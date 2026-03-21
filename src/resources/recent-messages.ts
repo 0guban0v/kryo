@@ -44,7 +44,7 @@ export function registerRecentMessagesResource(
     },
     async (uri, variables) => {
       const roomId = String(variables.roomId);
-      const messages = await services.campfire.getRecentMessages(roomId, 20);
+      const messages = await services.campfire.getRecentMessages(roomId);
       const markdown = joinSections([
         heading(`Recent Messages: ${roomId}`, 2),
         messages.length

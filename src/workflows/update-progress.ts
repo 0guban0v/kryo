@@ -38,7 +38,7 @@ export async function updateProgress(
     markdown: joinSections([
       heading("Progress Updated", 2),
       input.message ?? null,
-      cardDetailsMarkdown(moved.card),
+      cardDetailsMarkdown(services, moved.card),
     ]),
   };
 }

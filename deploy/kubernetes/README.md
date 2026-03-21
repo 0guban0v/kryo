@@ -1,14 +1,14 @@
 # Kubernetes Deployment Notes
 
-These manifests are a starter deployment example for the `mission-control-mcp` service and the `sample-service`.
+These manifests are a starter deployment example for the `kryo-mcp` service and the `demo-service`.
 
 They intentionally assume:
 
 - the images are built and pushed separately
 - Fizzy, Campfire, and the configured git forge are reachable through URLs supplied in config
-- `mission-control-mcp-secrets` is populated out-of-band, ideally by a self-hosted Infisical integration
+- `kryo-mcp-secrets` is populated out-of-band, ideally by a self-hosted Infisical integration
 
-The `mission-control-mcp-config` ConfigMap ships placeholder service URLs such as
+The `kryo-mcp-config` ConfigMap ships placeholder service URLs such as
 `http://fizzy.replace-me.svc.cluster.local`. Replace them for each environment instead of assuming
 Fizzy or Campfire run in a specific namespace.
 

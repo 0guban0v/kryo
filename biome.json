@@ -6,8 +6,8 @@
       ".pnpm-store",
       "build",
       "node_modules",
-      "sample-service/build",
-      "sample-service/node_modules"
+      "examples/demo-service/build",
+      "examples/demo-service/node_modules"
     ]
   },
   "formatter": {

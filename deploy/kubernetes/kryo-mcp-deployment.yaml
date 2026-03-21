@@ -1,30 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mission-control-mcp
+  name: kryo-mcp
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: mission-control-mcp
+      app: kryo-mcp
   template:
     metadata:
       labels:
-        app: mission-control-mcp
+        app: kryo-mcp
     spec:
       containers:
-        - name: mission-control-mcp
-          image: ghcr.io/your-org/mission-control-mcp:latest
+        - name: kryo-mcp
+          image: ghcr.io/your-org/kryo-mcp:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 3100
           envFrom:
             - configMapRef:
-                name: mission-control-mcp-config
+                name: kryo-mcp-config
             # This secret should be created or synchronized by self-hosted Infisical.
             - secretRef:
-                name: mission-control-mcp-secrets
+                name: kryo-mcp-secrets
           readinessProbe:
             httpGet:
               path: /up

@@ -3,7 +3,6 @@ import type { Server as HttpServer } from "node:http";
 
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
@@ -17,11 +16,6 @@ interface StreamableSession {
   transport: StreamableHTTPServerTransport;
 }
 
-interface SseSession {
-  server: McpServer;
-  transport: SSEServerTransport;
-}
-
 export function createMissionControlExpressApp(host: string): Express {
   return createMcpExpressApp({ host });
 }
@@ -32,11 +26,6 @@ export function registerMcpHttpRoutes(
 ): void {
   if (services.config.mcp.transport === "streamable-http") {
     registerStreamableHttpRoutes(app, services);
-    return;
-  }
-
-  if (services.config.mcp.transport === "sse") {
-    registerLegacySseRoutes(app, services);
   }
 }
 
@@ -134,56 +123,6 @@ function registerStreamableHttpRoutes(
     }
 
     await sessions[sessionId].transport.handleRequest(request, response);
-  });
-}
-
-function registerLegacySseRoutes(
-  app: Express,
-  services: MissionControlServices,
-): void {
-  const sessions: Record<string, SseSession> = {};
-
-  app.get(services.config.mcp.ssePath, async (_request, response) => {
-    try {
-      const server = createMissionControlServer(services);
-      const transport = new SSEServerTransport(
-        services.config.mcp.sseMessagesPath,
-        response,
-      );
-
-      sessions[transport.sessionId] = { server, transport };
-      transport.onclose = async () => {
-        delete sessions[transport.sessionId];
-        await server.close().catch(() => undefined);
-      };
-
-      await server.connect(transport);
-    } catch (error) {
-      services.logger.error("SSE MCP session initialization failed.", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-
-      if (!response.headersSent) {
-        response.status(500).send("Failed to initialize SSE transport");
-      }
-    }
-  });
-
-  app.post(services.config.mcp.sseMessagesPath, async (request, response) => {
-    const sessionQuery = request.query.sessionId;
-    const sessionId =
-      typeof sessionQuery === "string" ? sessionQuery : undefined;
-
-    if (!sessionId || !sessions[sessionId]) {
-      response.status(404).send("MCP SSE session not found");
-      return;
-    }
-
-    await sessions[sessionId].transport.handlePostMessage(
-      request,
-      response,
-      request.body,
-    );
   });
 }
 

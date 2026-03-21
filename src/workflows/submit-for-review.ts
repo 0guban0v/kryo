@@ -37,7 +37,11 @@ export async function submitForReview(
     `PR created for review: ${pullRequest.html_url}`,
   );
 
-  const moved = await tryMoveCardToTarget(services, card, "Review");
+  const moved = await tryMoveCardToTarget(
+    services,
+    card,
+    services.config.workflow.reviewColumnName,
+  );
   const summary = `Submitted ${cardLabel(card)} for review as PR #${pullRequest.number}.`;
 
   await notifyCampfireIfNeeded(
@@ -52,7 +56,7 @@ export async function submitForReview(
       heading("Submitted For Review", 2),
       `PR #${pullRequest.number}: ${pullRequest.html_url}`,
       moved.note,
-      cardDetailsMarkdown(moved.card),
+      cardDetailsMarkdown(services, moved.card),
     ]),
   };
 }

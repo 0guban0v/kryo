@@ -107,6 +107,7 @@ export async function troubleshoot(
 ): Promise<WorkflowResult> {
   const card = await services.fizzy.getCard(input.cardId);
   const analysis = analyzeErrorOutput(input.errorOutput, input.context);
+  const errorExcerptLimit = services.config.limits.troubleshootErrorOutput;
   const comment = joinSections([
     "Troubleshooting note",
     `Root cause: ${analysis.rootCause}`,
@@ -114,7 +115,7 @@ export async function troubleshoot(
     `Suggested fix: ${analysis.suggestedFix}`,
     `Priority: ${analysis.priority}`,
     "Error excerpt:",
-    truncate(input.errorOutput, 1_500),
+    truncate(input.errorOutput, errorExcerptLimit),
   ]);
 
   await services.fizzy.addComment(card, comment);
@@ -137,7 +138,7 @@ export async function troubleshoot(
         `Suggested fix: ${analysis.suggestedFix}`,
         `Priority: ${analysis.priority}`,
       ]),
-      codeFence(truncate(input.errorOutput, 1_500)),
+      codeFence(truncate(input.errorOutput, errorExcerptLimit)),
     ]),
   };
 }

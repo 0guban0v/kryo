@@ -21,12 +21,12 @@ const now = "2026-03-20T00:00:00.000Z";
 
 const creator: FizzyUser = {
   id: "user-creator",
-  name: "Mission Control",
+  name: "Kryo",
 };
 
 const board: FizzyBoard = {
   id: "board-1",
-  name: "Mission Control",
+  name: "Kryo",
   all_access: true,
   created_at: now,
   url: "http://fizzy/boards/board-1",
@@ -85,7 +85,22 @@ function createMockServices(input: {
   github?: Record<string, unknown>;
 }): MissionControlServices {
   return {
-    config: {} as MissionControlServices["config"],
+    config: {
+      limits: {
+        cardDescriptionPreview: 500,
+        boardStatusVisibleCards: 5,
+        troubleshootErrorOutput: 1500,
+      },
+      workflow: {
+        todoColumnName: "To Do",
+        inProgressColumnName: "In Progress",
+        reviewColumnName: "Review",
+        blockedColumnName: "Blocked",
+        doneLabel: "Done",
+        notNowLabel: "Not Now",
+        triageLabel: "Triage",
+      },
+    } as MissionControlServices["config"],
     logger: new Logger("error"),
     fizzy: input.fizzy as unknown as MissionControlServices["fizzy"],
     campfire: (input.campfire ??
@@ -275,10 +290,7 @@ test("createCard applies tags, moves the card, and notifies Campfire", async () 
     column: "In Progress",
   });
 
-  assert.equal(
-    result.summary,
-    "Created #2 Fix auth timeout on Mission Control.",
-  );
+  assert.equal(result.summary, "Created #2 Fix auth timeout on Kryo.");
   assert.equal(notifications.length, 1);
   assert.match(result.markdown, /Placed in In Progress\./);
   assert.match(result.markdown, /Tags: bug, p1/);

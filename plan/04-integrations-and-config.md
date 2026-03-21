@@ -132,14 +132,14 @@ CAMPFIRE_ROOM_ID=your-room-id
 GIT_FORGE_PROVIDER=github
 GITHUB_API_URL=https://api.github.com
 GITHUB_TOKEN=your-token
-GITHUB_REPO=your-org/mission-control-mcp
+GITHUB_REPO=your-org/kryo-mcp
 GITHUB_DEFAULT_BRANCH=main
 
 # Infisical
 INFISICAL_URL=https://infisical.internal.example
 INFISICAL_PROJECT_ID=project-id
 INFISICAL_ENVIRONMENT=dev
-INFISICAL_SECRET_PATH=/mission-control-mcp
+INFISICAL_SECRET_PATH=/kryo-mcp
 # For generic containers or VMs, use a machine identity via Universal Auth.
 INFISICAL_CLIENT_ID=machine-identity-client-id
 INFISICAL_CLIENT_SECRET=machine-identity-client-secret

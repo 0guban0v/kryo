@@ -1,12 +1,12 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: mission-control-mcp
+namespace: kryo-mcp
 
 resources:
   - namespace.yaml
-  - mission-control-mcp-configmap.yaml
-  - mission-control-mcp-deployment.yaml
-  - mission-control-mcp-service.yaml
-  - sample-service-deployment.yaml
-  - sample-service-service.yaml
+  - kryo-mcp-configmap.yaml
+  - kryo-mcp-deployment.yaml
+  - kryo-mcp-service.yaml
+  - demo-service-deployment.yaml
+  - demo-service-service.yaml

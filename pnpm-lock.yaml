@@ -37,7 +37,7 @@ importers:
         specifier: ^5.8.2
         version: 5.9.3
 
-  sample-service:
+  examples/demo-service:
     dependencies:
       express:
         specifier: ^4.21.2

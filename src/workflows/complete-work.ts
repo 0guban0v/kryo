@@ -53,7 +53,11 @@ export async function completeWork(
     commitTitle: `Merge PR #${input.prNumber}: ${card.title}`,
   });
 
-  const moved = await tryMoveCardToTarget(services, card, "Done");
+  const moved = await tryMoveCardToTarget(
+    services,
+    card,
+    services.config.workflow.doneLabel,
+  );
   const summary = `Merged PR #${input.prNumber} and completed ${cardLabel(card)}.`;
 
   await notifyCampfireIfNeeded(
@@ -68,7 +72,7 @@ export async function completeWork(
       heading("Work Completed", 2),
       `Merge response: ${merge.message}`,
       moved.note,
-      cardDetailsMarkdown(moved.card),
+      cardDetailsMarkdown(services, moved.card),
     ]),
   };
 }

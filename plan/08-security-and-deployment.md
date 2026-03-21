@@ -83,8 +83,8 @@ Any shared-secret material for this boundary should come from Infisical.
 
 The minimum deployment story should include:
 
-1. a root `Dockerfile` for `mission-control-mcp`
-2. a `sample-service/Dockerfile`
+1. a root `Dockerfile` for `kryo-mcp`
+2. an `examples/demo-service/Dockerfile`
 3. a local `docker-compose.yml`
 4. at least one concrete deployment example under `deploy/`
 5. a CI pipeline that builds, tests, and validates the container packaging

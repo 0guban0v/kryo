@@ -1,10 +1,10 @@
-# Mission Control MCP
+# Kryo MCP
 
 Self-hosted MCP server for AI-powered developer workflow orchestration across Fizzy, Campfire, and a GitHub-compatible git forge, designed for air-gapped or defense-sensitive environments.
 
 ## Why this exists
 
-`mission-control-mcp` demonstrates an end-to-end developer workflow where an agent can:
+`kryo-mcp` demonstrates an end-to-end developer workflow where an agent can:
 
 - pick up work from a Fizzy board
 - update progress and report blockers
@@ -21,10 +21,10 @@ The server is intentionally workflow-oriented instead of exposing raw API wrappe
 | MCP client or IDE agent  |
 +------------+-------------+
              |
-             | stdio / HTTP / SSE
+             | stdio / HTTP
              v
 +----------------------------------------------------+
-| mission-control-mcp                                |
+| kryo-mcp                                           |
 |                                                    |
 | MCP tools        Campfire bot webhook              |
 |      \             /                               |
@@ -62,9 +62,10 @@ The server is intentionally workflow-oriented instead of exposing raw API wrappe
 |   |-- http-server.ts
 |   |-- index.ts
 |   `-- server.ts
-|-- sample-service/
-|   |-- Dockerfile
-|   `-- tests/
+|-- examples/
+|   `-- demo-service/
+|       |-- Dockerfile
+|       `-- tests/
 |-- tests/
 |-- deploy/
 |-- docker-compose.yml
@@ -77,10 +78,10 @@ The server is intentionally workflow-oriented instead of exposing raw API wrappe
 1. Copy `.env.example` to `.env` and fill in the non-secret config. Prefer injecting real secret values into the runtime environment via self-hosted Infisical rather than treating `.env` as the system of record for credentials.
 2. Build and start the full local stack with `docker compose up --build`.
 3. Point your MCP client at `http://localhost:3100/mcp` when `MCP_TRANSPORT=streamable-http`.
-4. Open Fizzy on `http://localhost:3006`, Campfire on `http://localhost:3000`, and the sample service on `http://localhost:4000`.
+4. Open Fizzy on `http://localhost:3006`, Campfire on `http://localhost:3000`, and the demo service on `http://localhost:4000`.
 5. For host-run development instead of containerized execution, override `FIZZY_URL`, `CAMPFIRE_URL`, `MCP_HOST`, and `MCP_TRANSPORT` appropriately and use `pnpm` or the `Makefile` targets.
 
-The sample service intentionally does **not** implement `/health` yet. The baseline smoke test remains green for CI, while the full demo suite at `pnpm run sample-service:test:demo` is designed to fail until an agent completes that task during the demo.
+The bundled demo app at `examples/demo-service` intentionally does **not** implement `/health` yet. The baseline smoke test remains green for CI, while the full demo suite at `pnpm run demo-service:test:demo` is designed to fail until an agent completes that task during the demo.
 
 ## Tooling
 
@@ -144,7 +145,6 @@ For demos, pointing at public GitHub is fine. For a real air-gapped deployment, 
 
 - `stdio`: starts the MCP server over stdio and also boots the Campfire webhook HTTP listener for host-run development
 - `streamable-http`: serves MCP over `MCP_PATH` and is the default containerized mode
-- `sse`: serves legacy SSE MCP transport over `MCP_SSE_PATH` plus `MCP_SSE_MESSAGES_PATH`
 
 All modes also expose:
 
@@ -171,7 +171,7 @@ All modes also expose:
 
 ## Docker notes
 
-`docker-compose.yml` now runs the full local stack: `mission-control-mcp`, `sample-service`, Fizzy, and Campfire.
+`docker-compose.yml` now runs the full local stack: `kryo-mcp`, `demo-service`, Fizzy, and Campfire.
 
 The repository now includes a shared `pnpm-lock.yaml`, and both CI and Docker builds use
 `pnpm install --frozen-lockfile` for reproducible dependency resolution.

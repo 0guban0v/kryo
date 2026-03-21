@@ -24,6 +24,8 @@ interface CampfireApiMessage {
 }
 
 class RoomTranscriptStore {
+  constructor(private readonly maxMessages: number) {}
+
   private readonly rooms = new Map<string, CampfireRoomSummary>();
   private readonly messages = new Map<string, CampfireObservedMessage[]>();
 
@@ -40,7 +42,7 @@ class RoomTranscriptStore {
 
     const roomMessages = this.messages.get(message.roomId) ?? [];
     roomMessages.push(message);
-    this.messages.set(message.roomId, roomMessages.slice(-100));
+    this.messages.set(message.roomId, roomMessages.slice(-this.maxMessages));
   }
 
   listRooms(): CampfireRoomSummary[] {
@@ -55,18 +57,23 @@ class RoomTranscriptStore {
 }
 
 export class CampfireClient {
-  private readonly transcripts = new RoomTranscriptStore();
+  private readonly transcripts: RoomTranscriptStore;
 
   constructor(
     private readonly options: {
       baseUrl: string;
       botKey?: string | undefined;
       defaultRoomId?: string | undefined;
+      selection?: "configured" | "require-explicit" | undefined;
       sessionCookie?: string | undefined;
+      transcriptLimit?: number | undefined;
+      recentMessagesLimit?: number | undefined;
       timeoutMs?: number | undefined;
       logger?: Logger | undefined;
     },
   ) {
+    this.transcripts = new RoomTranscriptStore(options.transcriptLimit ?? 100);
+
     if (options.defaultRoomId) {
       this.transcripts.registerRoom({
         id: options.defaultRoomId,
@@ -94,9 +101,7 @@ export class CampfireClient {
     roomName?: string | undefined;
     roomPath?: string | undefined;
   }): Promise<void> {
-    const path =
-      input.roomPath ??
-      this.buildRoomPath(input.roomId ?? this.options.defaultRoomId);
+    const path = input.roomPath ?? this.buildRoomPath(input.roomId);
 
     if (!path) {
       throw new Error(
@@ -119,7 +124,7 @@ export class CampfireClient {
         roomId,
         roomName: input.roomName ?? `Room ${roomId}`,
         body: input.body,
-        senderName: "mission-control-mcp",
+        senderName: "kryo-mcp",
         observedAt: new Date().toISOString(),
         path,
         source: "bot",
@@ -157,7 +162,7 @@ export class CampfireClient {
 
   async getRecentMessages(
     roomId: string,
-    limit = 20,
+    limit = this.options.recentMessagesLimit ?? 20,
   ): Promise<CampfireObservedMessage[]> {
     if (!this.options.sessionCookie) {
       return this.transcripts.recentMessages(roomId, limit);
@@ -198,7 +203,13 @@ export class CampfireClient {
   }
 
   buildRoomPath(roomId?: string): string | null {
-    if (!roomId) {
+    const resolvedRoomId =
+      roomId ??
+      (this.options.selection !== "require-explicit"
+        ? this.options.defaultRoomId
+        : undefined);
+
+    if (!resolvedRoomId) {
       return null;
     }
 
@@ -208,7 +219,7 @@ export class CampfireClient {
       );
     }
 
-    return `/rooms/${encodeURIComponent(roomId)}/${encodeURIComponent(this.options.botKey)}/messages`;
+    return `/rooms/${encodeURIComponent(resolvedRoomId)}/${encodeURIComponent(this.options.botKey)}/messages`;
   }
 
   private apiHeaders(): HeadersInit {

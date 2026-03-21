@@ -3,11 +3,11 @@
 ## Setup before recording
 
 - Run `docker compose up -d`
-- Create a Fizzy board named `Mission Control`
+- Create a Fizzy board named `Kryo`
 - Add columns: `To Do`, `In Progress`, `Review`, `Done`, `Blocked`
 - Add a card such as `Add health check endpoint to mission-api`
 - Create a Campfire room such as `engineering`
-- Configure the MCP client to use `mission-control-mcp`
+- Configure the MCP client to use `kryo-mcp`
 
 ## Recording flow
 
@@ -29,7 +29,7 @@ Explain that the stack is self-hosted, MCP-driven, and meant for defense or othe
 
 ### 1:45 Implement the feature
 
-- Let the agent inspect `sample-service`
+- Let the agent inspect `examples/demo-service`
 - The agent notices the missing `/health` route and failing test
 - The agent adds the route and fixes the test
 
@@ -66,4 +66,4 @@ Summarize the design:
 - workflow-oriented MCP tools
 - shared adapter layer for both MCP and Campfire bot flows
 - self-hostable collaboration stack
-- transport flexibility: stdio, streamable HTTP, and SSE
+- transport flexibility: stdio and streamable HTTP

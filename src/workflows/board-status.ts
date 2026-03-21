@@ -42,14 +42,22 @@ function buildBuckets(cards: FizzyCard[]): CardBuckets {
   return buckets;
 }
 
-function renderBucket(name: string, cards: FizzyCard[]): string | null {
+function renderBucket(
+  name: string,
+  cards: FizzyCard[],
+  visibleCardLimit: number,
+): string | null {
   if (!cards.length) {
     return null;
   }
 
-  const visible = cards.slice(0, 5).map((card) => cardLabel(card));
+  const visible = cards
+    .slice(0, visibleCardLimit)
+    .map((card) => cardLabel(card));
   const more =
-    cards.length > 5 ? `${cards.length - 5} more card(s) not shown` : null;
+    cards.length > visibleCardLimit
+      ? `${cards.length - visibleCardLimit} more card(s) not shown`
+      : null;
 
   return joinSections([
     heading(`${name} (${cards.length})`, 3),
@@ -62,6 +70,8 @@ export async function getBoardStatus(
   boardId?: string,
 ): Promise<WorkflowResult> {
   const resolvedBoardId = services.fizzy.resolveBoardId(boardId);
+  const workflow = services.config.workflow;
+  const visibleCardLimit = services.config.limits.boardStatusVisibleCards;
   const [board, cards] = await Promise.all([
     services.fizzy.getBoard(resolvedBoardId),
     services.fizzy.listBoardCards(resolvedBoardId, { sortedBy: "oldest" }),
@@ -73,10 +83,10 @@ export async function getBoardStatus(
   );
 
   const summary = `Board ${board.name}: ${[
-    `Triage ${buckets.triage.length}`,
+    `${workflow.triageLabel} ${buckets.triage.length}`,
     ...columnCounts,
-    `Not Now ${buckets.notNow.length}`,
-    `Done ${buckets.done.length}`,
+    `${workflow.notNowLabel} ${buckets.notNow.length}`,
+    `${workflow.doneLabel} ${buckets.done.length}`,
   ].join(", ")}`;
 
   const markdown = joinSections([
@@ -86,12 +96,12 @@ export async function getBoardStatus(
       `Total cards: ${cards.length}`,
       `Public URL: ${board.public_url ?? "not published"}`,
     ]),
-    renderBucket("Triage", buckets.triage),
+    renderBucket(workflow.triageLabel, buckets.triage, visibleCardLimit),
     ...Array.from(buckets.columns.entries()).map(([name, columnCards]) =>
-      renderBucket(name, columnCards),
+      renderBucket(name, columnCards, visibleCardLimit),
     ),
-    renderBucket("Not Now", buckets.notNow),
-    renderBucket("Done", buckets.done),
+    renderBucket(workflow.notNowLabel, buckets.notNow, visibleCardLimit),
+    renderBucket(workflow.doneLabel, buckets.done, visibleCardLimit),
   ]);
 
   return { summary, markdown };
@@ -102,13 +112,17 @@ export async function getBlockedWork(
   boardId?: string,
 ): Promise<WorkflowResult> {
   const resolvedBoardId = services.fizzy.resolveBoardId(boardId);
+  const workflow = services.config.workflow;
   const [board, cards] = await Promise.all([
     services.fizzy.getBoard(resolvedBoardId),
     services.fizzy.listBoardCards(resolvedBoardId, { sortedBy: "oldest" }),
   ]);
 
   const blockedCards = cards.filter(
-    (card) => card.column && card.column.name.toLowerCase() === "blocked",
+    (card) =>
+      card.column &&
+      card.column.name.toLowerCase() ===
+        workflow.blockedColumnName.toLowerCase(),
   );
 
   if (!blockedCards.length) {
@@ -116,7 +130,7 @@ export async function getBlockedWork(
       summary: `No cards are currently blocked on ${board.name}.`,
       markdown: joinSections([
         heading(`Blocked Work: ${board.name}`, 2),
-        "No cards are currently in a `Blocked` column.",
+        `No cards are currently in a \`${workflow.blockedColumnName}\` column.`,
       ]),
     };
   }

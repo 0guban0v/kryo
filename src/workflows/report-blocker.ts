@@ -21,7 +21,11 @@ export async function reportBlocker(
   options: NotificationOptions = {},
 ): Promise<WorkflowResult> {
   const card = await services.fizzy.getCard(input.cardId);
-  const moved = await tryMoveCardToTarget(services, card, "Blocked");
+  const moved = await tryMoveCardToTarget(
+    services,
+    card,
+    services.config.workflow.blockedColumnName,
+  );
 
   const comment = joinSections([
     "Blocked while working this card.",
@@ -42,7 +46,7 @@ export async function reportBlocker(
       input.reason,
       input.errorOutput ? codeFence(input.errorOutput) : null,
       moved.note,
-      cardDetailsMarkdown(moved.card),
+      cardDetailsMarkdown(services, moved.card),
     ]),
   };
 }

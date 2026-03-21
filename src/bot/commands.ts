@@ -17,7 +17,7 @@ function toPlainText(markdown: string): string {
 
 function helpText(): string {
   return [
-    "Mission Control bot commands:",
+    "Kryo bot commands:",
     "* board status",
     "* what's blocked",
     "* pick up next [#tag]",

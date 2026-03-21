@@ -1,5 +1,16 @@
 services:
-  mission-control-mcp:
+  tooling:
+    image: node:22-alpine
+    profiles: ["tooling"]
+    working_dir: /workspace
+    command: sh -lc "tail -f /dev/null"
+    volumes:
+      - .:/workspace
+      - tooling-pnpm-store:/pnpm/store
+      - tooling-node-modules:/workspace/node_modules
+      - tooling-demo-node-modules:/workspace/examples/demo-service/node_modules
+
+  kryo-mcp:
     build:
       context: .
     restart: unless-stopped
@@ -8,7 +19,7 @@ services:
         condition: service_healthy
       campfire:
         condition: service_healthy
-      sample-service:
+      demo-service:
         condition: service_healthy
     env_file:
       - path: .env
@@ -27,10 +38,10 @@ services:
       retries: 6
       start_period: 15s
 
-  sample-service:
+  demo-service:
     build:
       context: .
-      dockerfile: sample-service/Dockerfile
+      dockerfile: examples/demo-service/Dockerfile
     restart: unless-stopped
     environment:
       PORT: 4000
@@ -82,3 +93,6 @@ services:
 volumes:
   fizzy-data:
   campfire-data:
+  tooling-pnpm-store:
+  tooling-node-modules:
+  tooling-demo-node-modules:

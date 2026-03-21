@@ -3,7 +3,7 @@
 ## Local Setup
 
 - Build and start the full stack with `docker compose up --build`
-- Create a Fizzy board called `Mission Control`
+- Create a Fizzy board called `Kryo`
 - Add workflow columns such as `Triage`, `To Do`, `In Progress`, `Review`, `Done`, and `Blocked`
 - Create a few starter cards
 - Configure a Campfire room for status reporting
@@ -21,7 +21,7 @@ Show the agent picking up the next task and updating both Fizzy and Campfire.
 
 ### 3. Implement The Feature
 
-Use the agent to add the missing `/health` endpoint in the sample service.
+Use the agent to add the missing `/health` endpoint in the demo service.
 
 ### 4. Run Tests
 
@@ -39,8 +39,8 @@ Break a test intentionally, run `troubleshoot`, and show blocker reporting in bo
 
 - The full stack starts from containers alone
 - The MCP server works in local `stdio` mode
-- The MCP server works in HTTP or SSE mode for deployed scenarios
+- The MCP server works in streamable HTTP mode for deployed scenarios
 - The Campfire bot responds correctly to chat commands
 - The workflow tools update Fizzy, Campfire, and the git forge coherently
-- The sample-service tests run inside containers
+- The demo-service tests run inside containers
 - Recreating the stack does not require host-level dependency reinstall

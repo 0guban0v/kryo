@@ -20,8 +20,8 @@ export function createMissionControlServer(
 ): McpServer {
   const server = new McpServer(
     {
-      name: "mission-control-mcp",
-      title: "Mission Control MCP Server",
+      name: "kryo-mcp",
+      title: "Kryo MCP Server",
       version: VERSION,
     },
     {

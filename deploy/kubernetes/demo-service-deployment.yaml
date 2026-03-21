@@ -1,20 +1,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: sample-service
+  name: demo-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: sample-service
+      app: demo-service
   template:
     metadata:
       labels:
-        app: sample-service
+        app: demo-service
     spec:
       containers:
-        - name: sample-service
-          image: ghcr.io/your-org/mission-control-sample-service:latest
+        - name: demo-service
+          image: ghcr.io/your-org/kryo-demo-service:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

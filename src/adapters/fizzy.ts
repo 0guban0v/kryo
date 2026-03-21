@@ -53,6 +53,7 @@ export class FizzyClient {
       accountId: string;
       apiToken: string;
       defaultBoardId?: string | undefined;
+      selection?: "configured" | "require-explicit" | undefined;
       timeoutMs?: number | undefined;
       logger?: Logger | undefined;
     },
@@ -415,12 +416,17 @@ export class FizzyClient {
       return boardId;
     }
 
-    if (this.options.defaultBoardId) {
+    if (
+      this.options.selection !== "require-explicit" &&
+      this.options.defaultBoardId
+    ) {
       return this.options.defaultBoardId;
     }
 
     throw new Error(
-      "No Fizzy board was provided and FIZZY_BOARD_ID is not configured.",
+      this.options.selection === "require-explicit"
+        ? "A Fizzy board ID must be provided explicitly for this workflow."
+        : "No Fizzy board was provided and FIZZY_BOARD_ID is not configured.",
     );
   }
 

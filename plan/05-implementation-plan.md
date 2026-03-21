@@ -4,8 +4,8 @@
 
 These repo-level foundation items are now in place:
 
-1. a production-grade `Dockerfile` for `mission-control-mcp`
-2. a `sample-service/Dockerfile`
+1. a production-grade `Dockerfile` for `kryo-mcp`
+2. an `examples/demo-service/Dockerfile`
 3. `.dockerignore` files
 4. baseline workflow-layer unit tests
 5. starter deployment manifests under `deploy/`
@@ -21,10 +21,10 @@ These repo-level foundation items are now in place:
 
 ## Phase 1: Container-First Scaffold
 
-1. Create a multi-stage `Dockerfile` for `mission-control-mcp`.
-2. Create `sample-service/Dockerfile`.
+1. Create a multi-stage `Dockerfile` for `kryo-mcp`.
+2. Create `examples/demo-service/Dockerfile`.
 3. Add `.dockerignore` files.
-4. Create `docker-compose.yml` with `mission-control-mcp`, `sample-service`, `fizzy`, and `campfire`.
+4. Create `docker-compose.yml` with `kryo-mcp`, `demo-service`, `fizzy`, and `campfire`.
 5. Make installs, builds, tests, and dev commands run inside containers.
 6. Initialize the TypeScript project and minimal boot path inside the containerized workflow.
 

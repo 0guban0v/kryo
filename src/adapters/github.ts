@@ -27,6 +27,7 @@ export class GitForgeClient {
       defaultRepo?: string | undefined;
       defaultBranch: string;
       mergeMethod: GitHubMergeMethod;
+      supportsCheckRuns?: boolean | undefined;
       timeoutMs?: number | undefined;
       logger?: Logger | undefined;
     },
@@ -152,6 +153,10 @@ export class GitForgeClient {
     repo: string,
     sha: string,
   ): Promise<GitHubCheckRun[]> {
+    if (this.options.supportsCheckRuns === false) {
+      return [];
+    }
+
     try {
       const response = await requestJson<GitHubCheckRunsResponse>(
         this.options.apiUrl,
@@ -242,12 +247,6 @@ export class GitForgeClient {
   }
 
   private authorizationHeader(): string {
-    if (!this.options.token) {
-      throw new Error(
-        "GITHUB_TOKEN is required for git forge workflows such as submit_for_review and complete_work.",
-      );
-    }
-
     return this.options.provider === "gitea"
       ? `token ${this.options.token}`
       : `Bearer ${this.options.token}`;

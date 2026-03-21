@@ -2,7 +2,7 @@
 
 ## Goal
 
-Build a production-quality TypeScript MCP server called `mission-control-mcp` that orchestrates an AI-powered developer workflow across:
+Build a production-quality TypeScript MCP server called `kryo-mcp` that orchestrates an AI-powered developer workflow across:
 
 - Fizzy for kanban
 - Campfire for chat and bot interactions
@@ -40,7 +40,7 @@ The final system should include:
 - the MCP server
 - the Campfire bot webhook handler
 - a shared adapter/workflow layer
-- a tiny `sample-service` used as the coding target in the demo
+- a tiny `examples/demo-service` app used as the coding target in the demo
 - local container orchestration
 - example deployment artifacts for cloud portability
 

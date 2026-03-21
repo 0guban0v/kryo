@@ -48,7 +48,7 @@ export async function createCard(
     markdown: joinSections([
       heading("Card Created", 2),
       moveNote,
-      cardDetailsMarkdown(card),
+      cardDetailsMarkdown(services, card),
     ]),
   };
 }

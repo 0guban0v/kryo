@@ -19,13 +19,36 @@ export function cardLabel(card: Pick<FizzyCard, "number" | "title">): string {
   return `#${card.number} ${card.title}`;
 }
 
-export function cardDetailsMarkdown(card: FizzyCard): string {
+function normalizedWorkflowLabels(services: MissionControlServices): {
+  done: string[];
+  notNow: string[];
+  triage: string[];
+} {
+  const workflow = services.config.workflow;
+
+  return {
+    done: [workflow.doneLabel, "done", "closed"].map((value) =>
+      normalizeName(value),
+    ),
+    notNow: [workflow.notNowLabel, "not now", "postponed"].map((value) =>
+      normalizeName(value),
+    ),
+    triage: [workflow.triageLabel, "triage", "to do"].map((value) =>
+      normalizeName(value),
+    ),
+  };
+}
+
+export function cardDetailsMarkdown(
+  services: MissionControlServices,
+  card: FizzyCard,
+): string {
   return joinSections([
     heading(cardLabel(card), 3),
     bullet([
       `Board: ${card.board.name}`,
       `Status: ${card.status}`,
-      `Column: ${card.column?.name ?? "Triage"}`,
+      `Column: ${card.column?.name ?? services.config.workflow.triageLabel}`,
       card.assignees.length
         ? `Assignees: ${card.assignees.map((assignee) => assignee.name).join(", ")}`
         : "Assignees: none",
@@ -33,7 +56,10 @@ export function cardDetailsMarkdown(card: FizzyCard): string {
       `URL: ${card.url}`,
     ]),
     card.description
-      ? truncate(card.description, 500)
+      ? truncate(
+          card.description,
+          services.config.limits.cardDescriptionPreview,
+        )
       : "No description provided.",
   ]);
 }
@@ -69,6 +95,8 @@ export async function resolveTarget(
   targetColumn: string,
 ): Promise<TargetResolution> {
   const column = await services.fizzy.findColumnByName(boardId, targetColumn);
+  const labels = normalizedWorkflowLabels(services);
+  const normalizedTarget = normalizeName(targetColumn);
 
   if (column) {
     return {
@@ -78,21 +106,21 @@ export async function resolveTarget(
     };
   }
 
-  switch (normalizeName(targetColumn)) {
-    case "done":
-    case "closed":
-      return { kind: "closed", label: "Done" };
-    case "not now":
-    case "postponed":
-      return { kind: "not_now", label: "Not Now" };
-    case "triage":
-    case "to do":
-      return { kind: "triage", label: "Triage" };
-    default:
-      throw new Error(
-        `Board ${boardId} does not have a column named "${targetColumn}".`,
-      );
+  if (labels.done.includes(normalizedTarget)) {
+    return { kind: "closed", label: services.config.workflow.doneLabel };
   }
+
+  if (labels.notNow.includes(normalizedTarget)) {
+    return { kind: "not_now", label: services.config.workflow.notNowLabel };
+  }
+
+  if (labels.triage.includes(normalizedTarget)) {
+    return { kind: "triage", label: services.config.workflow.triageLabel };
+  }
+
+  throw new Error(
+    `Board ${boardId} does not have a column named "${targetColumn}".`,
+  );
 }
 
 export async function moveCardToTarget(
@@ -151,7 +179,8 @@ export async function tryMoveCardToTarget(
   } catch (error) {
     return {
       card: current,
-      destinationLabel: current.column?.name ?? "Triage",
+      destinationLabel:
+        current.column?.name ?? services.config.workflow.triageLabel,
       moved: false,
       note:
         error instanceof Error

@@ -1,4 +1,4 @@
-export type TransportMode = "stdio" | "streamable-http" | "sse";
+export type TransportMode = "stdio" | "streamable-http";
 export type GitForgeProvider = "github" | "ghes" | "gitea";
 export type GitHubMergeMethod = "merge" | "squash" | "rebase";
 
