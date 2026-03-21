@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { registerCampfireBotRoutes } from "./bot/server.js";
 import { loadConfig } from "./config.js";
 import {
-  createMissionControlExpressApp,
+  createMissionControlHttpApp,
   registerMcpHttpRoutes,
   startHttpServer,
 } from "./http-server.js";
@@ -14,7 +14,7 @@ import { createMissionControlServer } from "./server.js";
 const config = loadConfig();
 const logger = new Logger(config.logLevel);
 const services = createServices(config, logger);
-const app = createMissionControlExpressApp(config.mcp.host);
+const app = createMissionControlHttpApp(config.mcp.host);
 
 registerCampfireBotRoutes(app, services);
 registerMcpHttpRoutes(app, services);

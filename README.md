@@ -88,6 +88,7 @@ The bundled demo app at `examples/demo-service` intentionally does **not** imple
 - Package management: `pnpm`
 - Linting and formatting: `Biome`
 - Task runner: lean `Makefile`
+- HTTP routing: `Hono`
 
 ## MCP tools
 

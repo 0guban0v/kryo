@@ -8,15 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@hono/node-server':
+        specifier: ^1.19.11
+        version: 1.19.11(hono@4.12.8)
       '@modelcontextprotocol/sdk':
         specifier: ^1.27.1
         version: 1.27.1(zod@3.25.76)
       dotenv:
         specifier: ^16.4.7
         version: 16.6.1
-      express:
-        specifier: ^4.21.2
-        version: 4.22.1
+      hono:
+        specifier: ^4.12.8
+        version: 4.12.8
       zod:
         specifier: ^3.25.76
         version: 3.25.76
@@ -24,9 +27,6 @@ importers:
       '@biomejs/biome':
         specifier: ^1.9.4
         version: 1.9.4
-      '@types/express':
-        specifier: ^4.17.21
-        version: 4.17.25
       '@types/node':
         specifier: ^22.13.8
         version: 22.19.15
