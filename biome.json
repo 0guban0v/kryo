@@ -1,0 +1,34 @@
+{
+  "files": {
+    "ignoreUnknown": true,
+    "ignore": [
+      ".claude",
+      ".pnpm-store",
+      "build",
+      "node_modules",
+      "sample-service/build",
+      "sample-service/node_modules"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space"
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always"
+    }
+  },
+  "json": {
+    "formatter": {
+      "enabled": true
+    }
+  }
+}

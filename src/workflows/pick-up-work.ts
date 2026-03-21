@@ -1,0 +1,88 @@
+import type { MissionControlServices } from "../runtime.js";
+import type { NotificationOptions, WorkflowResult } from "../types.js";
+import { heading, joinSections, normalizeName } from "../utils/markdown.js";
+import {
+  cardDetailsMarkdown,
+  cardLabel,
+  moveCardToTarget,
+  notifyCampfireIfNeeded,
+} from "./shared.js";
+
+export interface PickUpWorkInput {
+  boardId?: string | undefined;
+  priorityTag?: string | undefined;
+  targetColumnName?: string | undefined;
+  assigneeId?: string | undefined;
+}
+
+export async function pickUpWork(
+  services: MissionControlServices,
+  input: PickUpWorkInput,
+  options: NotificationOptions = {},
+): Promise<WorkflowResult> {
+  const boardId = services.fizzy.resolveBoardId(input.boardId);
+  const priorityTag = input.priorityTag
+    ? normalizeName(input.priorityTag)
+    : null;
+  const [currentUser, toDoColumn, cards] = await Promise.all([
+    input.assigneeId
+      ? Promise.resolve({ id: input.assigneeId, name: input.assigneeId })
+      : services.fizzy.getCurrentUser(),
+    services.fizzy.findColumnByName(boardId, "To Do"),
+    services.fizzy.listBoardCards(boardId, {
+      sortedBy: "oldest",
+      assignmentStatus: "unassigned",
+    }),
+  ]);
+
+  const candidates = cards
+    .filter((card) => !card.closed && !card.postponed)
+    .filter((card) =>
+      toDoColumn ? card.column?.id === toDoColumn.id : !card.column,
+    )
+    .filter((card) =>
+      priorityTag
+        ? card.tags.some((tag) => normalizeName(tag) === priorityTag)
+        : true,
+    );
+
+  const selected = candidates[0];
+
+  if (!selected) {
+    return {
+      summary: "No unassigned work item matched the requested queue.",
+      markdown: joinSections([
+        heading("Pick Up Work", 2),
+        "No unassigned card was found in the `To Do` queue.",
+        input.priorityTag ? `Priority tag filter: ${input.priorityTag}` : null,
+      ]),
+    };
+  }
+
+  const assignedCard = await services.fizzy.ensureAssigned(
+    selected,
+    currentUser.id,
+  );
+  const moved = await moveCardToTarget(
+    services,
+    assignedCard,
+    input.targetColumnName ?? "In Progress",
+  );
+
+  const summary = `Picked up ${cardLabel(moved.card)} and moved it to ${moved.destinationLabel}.`;
+
+  await notifyCampfireIfNeeded(
+    services,
+    `${summary} Assigned to ${currentUser.name}.`,
+    options,
+  );
+
+  return {
+    summary,
+    markdown: joinSections([
+      heading("Picked Up Work", 2),
+      `Assigned to ${currentUser.name} and moved to ${moved.destinationLabel}.`,
+      cardDetailsMarkdown(moved.card),
+    ]),
+  };
+}

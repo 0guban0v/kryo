@@ -1,0 +1,6 @@
+node_modules
+build
+sample-service/build
+.pnpm-store
+.env
+.DS_Store
