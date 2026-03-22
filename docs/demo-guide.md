@@ -85,7 +85,7 @@ Recommended git forge settings for the demo:
 
 - `GIT_FORGE_PROVIDER=gitea`
 - `GIT_FORGE_API_URL=http://kryo-gitea:3000/api/v1`
-- `GIT_FORGE_REPO=kryo-service/target-service`
+- `GIT_FORGE_REPO=platform-team/dev-sandbox`
 - `GIT_FORGE_ALLOW_REPO_OVERRIDE=false`
 - `GIT_FORGE_DEFAULT_BRANCH=main`
 - `GIT_FORGE_MERGE_METHOD=squash`

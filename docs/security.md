@@ -34,7 +34,7 @@ Terminate TLS at the ingress, reverse proxy, or load balancer in deployed enviro
 
 ## Git Forge Scope
 
-For the local Gitea demo flow, `make bootstrap` creates a dedicated `kryo-service` user and repo-scoped token.
+For the local Gitea demo flow, `make bootstrap` creates a dedicated `platform-team` user and repo-scoped token.
 
 - `GIT_FORGE_REPO` is set to the seeded repo owned by that service user
 - `GIT_FORGE_ALLOW_REPO_OVERRIDE=false` keeps MCP callers pinned to that repo by default

@@ -12,7 +12,7 @@ test("git forge repo overrides are disabled by default", () => {
     CAMPFIRE_URL: "http://campfire.internal",
     GIT_FORGE_PROVIDER: "gitea",
     GIT_FORGE_API_URL: "http://gitea.internal/api/v1",
-    GIT_FORGE_REPO: "kryo-service/target-service",
+    GIT_FORGE_REPO: "platform-team/dev-sandbox",
   });
 
   assert.equal(config.github.allowRepoOverride, false);
@@ -23,16 +23,16 @@ test("git forge client rejects repo overrides when locked", () => {
     provider: "gitea",
     apiUrl: "http://gitea.internal/api/v1",
     token: "token",
-    defaultRepo: "kryo-service/target-service",
+    defaultRepo: "platform-team/dev-sandbox",
     allowRepoOverride: false,
     defaultBranch: "main",
     mergeMethod: "squash",
   });
 
-  assert.equal(client.resolveRepo(), "kryo-service/target-service");
+  assert.equal(client.resolveRepo(), "platform-team/dev-sandbox");
   assert.equal(
-    client.resolveRepo("kryo-service/target-service"),
-    "kryo-service/target-service",
+    client.resolveRepo("platform-team/dev-sandbox"),
+    "platform-team/dev-sandbox",
   );
   assert.throws(
     () => client.resolveRepo("other-org/other-repo"),
@@ -45,7 +45,7 @@ test("git forge client allows explicit repo overrides when enabled", () => {
     provider: "gitea",
     apiUrl: "http://gitea.internal/api/v1",
     token: "token",
-    defaultRepo: "kryo-service/target-service",
+    defaultRepo: "platform-team/dev-sandbox",
     allowRepoOverride: true,
     defaultBranch: "main",
     mergeMethod: "squash",

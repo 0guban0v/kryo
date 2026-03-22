@@ -45,7 +45,7 @@ It creates or reuses the local Fizzy account/token, Campfire room/bot, and a loc
 - `GIT_FORGE_REPO`
 
 For local browser logins, the bootstrap defaults are service-specific: Fizzy uses `fizzy-admin@demo.local` with the development magic-link flow, and Campfire uses the seeded platform admin at `campfire-admin@demo.local` / `campfire-admin`. The only other seeded Campfire identity is the `Kryo` bot.
-Gitea uses `gitea-admin` / `gitea-admin` for the admin UI and seeds a `kryo-service` account that owns the repo Kryo is allowed to edit by default.
+Gitea uses `gitea-admin` / `gitea-admin` for the admin UI and seeds a `platform-team` account that owns the repo Kryo is allowed to edit by default.
 If you are using a browser without devtools, run `make fizzy-login-code` to print a fresh Fizzy sign-in code for the bootstrap email.
 For local code health checks, run `make quality` to verify formatting, lint the repo, and detect dead code with `knip`.
 

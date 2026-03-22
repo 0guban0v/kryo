@@ -31,7 +31,7 @@ make deploy-all
 - ensures `fizzy`, `campfire`, and `gitea` are running
 - creates or reuses a local Fizzy identity, account, and write token
 - creates or reuses a local Campfire administrator, room, and bot
-- creates or reuses a local Gitea administrator, a dedicated `kryo-service` user, a service token, and a bootstrap repo
+- creates or reuses a local Gitea administrator, a dedicated `platform-team` user, a service token, and a bootstrap repo
 - updates the selected env file with:
   - `FIZZY_ACCOUNT_ID`
   - `FIZZY_API_TOKEN`
@@ -77,9 +77,9 @@ Defaults for Gitea:
 - root URL: `http://localhost:3007`
 - administrator username: `gitea-admin`
 - administrator password: `gitea-admin`
-- service user: `kryo-service`
-- service user password: `kryo-service`
-- bootstrap repo: `target-service`
+- service user: `platform-team`
+- service user password: `platform-team`
+- bootstrap repo: `dev-sandbox`
 
 By default, Kryo locks git-forge edits to the bootstrapped repo by setting `GIT_FORGE_ALLOW_REPO_OVERRIDE=false`.
 Set it to `true` only if you intentionally want one Kryo instance to operate on multiple repos.
