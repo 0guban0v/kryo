@@ -2,6 +2,7 @@
 
 include make/common.mk
 include make/container.mk
+include make/observability.mk
 
 .PHONY: guard-env-file
 

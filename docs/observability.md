@@ -14,6 +14,13 @@ The local observability profile includes:
 make observability-up ENV_FILE=yourname.env
 ```
 
+To reapply Grafana dashboard and datasource provisioning after editing the
+checked-in files without redeploying the whole stack:
+
+```sh
+make observability-deploy-dashboard ENV_FILE=yourname.env
+```
+
 ## Access
 
 - Grafana: `http://localhost:3001`
