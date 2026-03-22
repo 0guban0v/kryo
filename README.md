@@ -16,24 +16,29 @@ The server is workflow-oriented rather than a thin API wrapper. Tools compose mu
 
 ## Local Bootstrap
 
-For a clean local start:
+For a clean local start with the full local stack, including observability:
 
 ```sh
 cp .env.example yourname.env
-make deploy ENV_FILE=yourname.env
+make deploy-all ENV_FILE=yourname.env
 ```
 
 The Makefile intentionally defaults `ENV_FILE` to a placeholder so Compose-backed targets fail fast until you pick a real local env file name and pass `ENV_FILE=...`.
 
-Then access:
+`make deploy-all` runs the idempotent bootstrap flow, starts the core developer workflow services, and brings up the local observability profile. Installation details, seeded demo identities, login helpers, and the broader Make target reference live in the docs.
 
-- MCP HTTP: `http://localhost:3100/mcp`
-- `mcp` health: `http://localhost:3100/up`
-- Fizzy: `http://localhost:3006`
-- Campfire: `http://localhost:3000`
-- Gitea: `http://localhost:3007`
-
-`make deploy` runs the idempotent bootstrap flow and starts the local stack. Installation details, seeded demo identities, login helpers, and the broader Make target reference live in the docs.
+| Service | Purpose | URL |
+| --- | --- | --- |
+| MCP HTTP | MCP endpoint | [http://localhost:3100/mcp](http://localhost:3100/mcp) |
+| MCP Health | Kryo liveness check | [http://localhost:3100/up](http://localhost:3100/up) |
+| Campfire Webhook | Bot webhook endpoint | [http://localhost:3100/campfire/webhook](http://localhost:3100/campfire/webhook) |
+| Fizzy | Board UI | [http://localhost:3006](http://localhost:3006) |
+| Campfire | Chat UI | [http://localhost:3000](http://localhost:3000) |
+| Gitea | Git forge UI | [http://localhost:3007](http://localhost:3007) |
+| Grafana | Dashboards | [http://localhost:3001](http://localhost:3001) |
+| Prometheus | Metrics and query UI | [http://localhost:9090](http://localhost:9090) |
+| blackbox-exporter | Probe debug endpoint | [http://localhost:9115](http://localhost:9115) |
+| Loki | Log API | [http://localhost:3101](http://localhost:3101) |
 
 ## Docs
 

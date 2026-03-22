@@ -23,8 +23,8 @@ make observability-up ENV_FILE=yourname.env
 
 Grafana credentials:
 
-- user: `admin`
-- password: `admin`
+- user: `GRAFANA_ADMIN_USER` (default `grafana-admin@demo.local`)
+- password: `GRAFANA_ADMIN_PASSWORD` (default `grafana-admin`)
 
 ## What You Get
 
@@ -41,3 +41,8 @@ Grafana credentials:
   - `fizzy`
   - `campfire`
   - `gitea`
+
+Promtail filters Docker discovery by Compose project name. By default it uses
+`COMPOSE_PROJECT_NAME` when set, otherwise the local default `kryo`. Override
+`PROMTAIL_COMPOSE_PROJECT_REGEX` if your deployment uses a different project
+label or needs a broader match.

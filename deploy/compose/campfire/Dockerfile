@@ -1,7 +1,8 @@
 # syntax = docker/dockerfile:1
 
-ARG RUBY_VERSION=3.4.5
-FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
+ARG RUBY_BASE_IMAGE=docker.io/library/ruby:3.4.5-slim@sha256:f1cca61013f823406e5ec23d3b8804ee0ba916febbfee089e647db93e8e749c7
+ARG MSGPACK_VERSION=1.7.5
+FROM ${RUBY_BASE_IMAGE} AS base
 
 WORKDIR /rails
 
@@ -29,7 +30,7 @@ COPY once-campfire/Gemfile once-campfire/Gemfile.lock once-campfire/vendor ./
 
 # Campfire runs Rails main, which expects msgpack support for Action Cable.
 # Inject the gem at image-build time so the sibling once-campfire checkout stays untouched.
-RUN bundle add msgpack --version ">= 1.7.0" && \
+RUN bundle add msgpack --version "$MSGPACK_VERSION" && \
     bundle install && \
     rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 

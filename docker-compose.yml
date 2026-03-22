@@ -42,7 +42,7 @@ services:
       start_period: 15s
 
   prometheus:
-    image: prom/prometheus:v3.4.2
+    image: prom/prometheus@sha256:3b1d5be5c3eef4f027665ddaa3b1a7de8a58d96a0a6de5dd45629afd267ecaf0
     profiles: ["observability"]
     restart: unless-stopped
     command:
@@ -69,7 +69,7 @@ services:
       - "9115:9115"
 
   loki:
-    image: grafana/loki:3.5.5
+    image: grafana/loki@sha256:31628519045e7f28692a7ae73b4a3fd293dccb425585ed5d16ceea3b5c9592e6
     profiles: ["observability"]
     restart: unless-stopped
     command:
@@ -81,11 +81,14 @@ services:
       - "3101:3100"
 
   promtail:
-    image: grafana/promtail:3.5.5
+    image: grafana/promtail@sha256:784743d283f71f644e290d7b9fadf5e1edff405d2756974c6e13fa7978c08b64
     profiles: ["observability"]
     restart: unless-stopped
     command:
       - -config.file=/etc/promtail/config.yml
+      - -config.expand-env=true
+    environment:
+      PROMTAIL_COMPOSE_PROJECT_REGEX: ${PROMTAIL_COMPOSE_PROJECT_REGEX:-${COMPOSE_PROJECT_NAME:-kryo}}
     volumes:
       - ./observability/promtail/config.yml:/etc/promtail/config.yml:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -96,12 +99,12 @@ services:
         condition: service_started
 
   grafana:
-    image: grafana/grafana:12.1.1
+    image: grafana/grafana@sha256:a1701c2180249361737a99a01bc770db39381640e4d631825d38ff4535efa47d
     profiles: ["observability"]
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-grafana-admin@demo.local}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-grafana-admin}
     volumes:
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
@@ -144,6 +147,7 @@ services:
       args:
         APP_VERSION: ${ONCE_CAMPFIRE_VERSION:-v1.4.3}
         GIT_REVISION: ${ONCE_CAMPFIRE_VERSION:-v1.4.3}
+        MSGPACK_VERSION: ${CAMPFIRE_MSGPACK_VERSION:-1.7.5}
     restart: unless-stopped
     ports:
       - "3000:80"
@@ -164,7 +168,7 @@ services:
       start_period: 45s
 
   gitea:
-    image: gitea/gitea:1.25.5-rootless
+    image: gitea/gitea@sha256:be0b89adf2fc8657df508303d919c3be33e6413605882919f702177d62960c9a
     restart: unless-stopped
     ports:
       - "3007:3000"

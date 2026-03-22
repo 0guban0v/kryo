@@ -23,18 +23,18 @@
     "quality": "pnpm run format:check && pnpm run lint && pnpm run deadcode"
   },
   "dependencies": {
-    "@hono/node-server": "^1.19.11",
-    "@modelcontextprotocol/sdk": "^1.27.1",
-    "dotenv": "^16.4.7",
-    "hono": "^4.12.8",
-    "zod": "^3.25.76"
+    "@hono/node-server": "1.19.11",
+    "@modelcontextprotocol/sdk": "1.27.1",
+    "dotenv": "16.4.7",
+    "hono": "4.12.8",
+    "zod": "3.25.76"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@types/node": "^22.13.8",
-    "knip": "^6.0.1",
-    "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "22.13.8",
+    "knip": "6.0.1",
+    "tsx": "4.19.3",
+    "typescript": "5.8.2"
   },
   "engines": {
     "node": ">=20.0.0"
