@@ -1,7 +1,7 @@
 .PHONY: \
 	install build test-offline test-online lint format deadcode quality up down restart ps logs health devbox-up \
-	bootstrap bootstrap-fizzy bootstrap-campfire bootstrap-gitea generate-mcp-env fizzy-login-code deploy deploy-all observability-up observability-down observability-ps \
-	container-install container-build container-test-offline container-test-online container-lint container-format container-deadcode container-quality
+	bootstrap bootstrap-fizzy bootstrap-campfire bootstrap-gitea generate-mcp-env refresh-mcp-runtime fizzy-login-code deploy deploy-all observability-up observability-down observability-ps \
+	container-install container-build container-test-offline container-test-online container-lint container-format container-deadcode container-quality container-refresh-mcp-runtime
 
 ENV_FILE_PLACEHOLDER := yourname.env
 ENV_FILE ?= $(ENV_FILE_PLACEHOLDER)

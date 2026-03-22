@@ -10,8 +10,11 @@ container-build: devbox-up
 container-test-offline: devbox-up
 	$(DEVBOX_EXEC) '$(DEVBOX_BOOTSTRAP) && $(PNPM_INSTALL) >/dev/null && pnpm run test:offline'
 
-container-test-online: devbox-up
-	$(DEVBOX_EXEC) '$(DEVBOX_BOOTSTRAP) && $(PNPM_INSTALL) >/dev/null && pnpm run test:online'
+container-refresh-mcp-runtime: guard-env-file generate-mcp-env
+	$(COMPOSE) up -d --force-recreate mcp
+
+container-test-online: container-refresh-mcp-runtime devbox-up
+	$(DEVBOX_EXEC) '$(DEVBOX_BOOTSTRAP) && $(PNPM_INSTALL) >/dev/null && MCP_E2E_URL=http://mcp:3100/mcp pnpm run test:online'
 
 container-lint: devbox-up
 	$(DEVBOX_EXEC) '$(DEVBOX_BOOTSTRAP) && $(PNPM_INSTALL) >/dev/null && pnpm run lint'
@@ -32,6 +35,8 @@ build: container-build
 test-offline: container-test-offline
 
 test-online: container-test-online
+
+refresh-mcp-runtime: container-refresh-mcp-runtime
 
 lint: container-lint
 

@@ -118,6 +118,7 @@ make bootstrap \
 
 `make test-online` runs the standalone MCP HTTP end-to-end suite against a live server.
 It uses `MCP_E2E_URL`, which defaults to `http://127.0.0.1:3100/mcp`.
+When run through `make test-online`, the devbox container targets the Compose service URL `http://mcp:3100/mcp`.
 `make deadcode` runs `knip`.
 `make quality` runs `format:check`, `lint`, and `deadcode` in one step.
 
