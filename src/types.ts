@@ -1,4 +1,5 @@
 export type TransportMode = "stdio" | "streamable-http";
+export type HttpSessionMode = "stateful" | "stateless";
 export type GitForgeProvider = "github" | "ghes" | "gitea";
 export type GitHubMergeMethod = "merge" | "squash" | "rebase";
 

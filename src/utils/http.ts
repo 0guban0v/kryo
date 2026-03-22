@@ -41,7 +41,7 @@ function setDefaultHeader(headers: Headers, key: string, value: string): void {
   }
 }
 
-export function buildUrl(
+function buildUrl(
   baseUrl: string,
   path: string,
   query?: Record<string, QueryValue>,

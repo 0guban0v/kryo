@@ -33,7 +33,7 @@ export function registerCompleteWorkTool(
           .string()
           .optional()
           .describe(
-            "GitHub repo in owner/name format. Defaults to GITHUB_REPO.",
+            "Git forge repo in owner/name format. Defaults to GIT_FORGE_REPO and is rejected unless GIT_FORGE_ALLOW_REPO_OVERRIDE=true.",
           ),
       },
     },

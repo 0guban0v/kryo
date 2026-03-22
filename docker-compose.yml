@@ -1,16 +1,15 @@
 services:
-  tooling:
+  devbox:
     image: node:22-alpine
-    profiles: ["tooling"]
+    profiles: ["devbox"]
     working_dir: /workspace
     command: sh -lc "tail -f /dev/null"
     volumes:
       - .:/workspace
-      - tooling-pnpm-store:/pnpm/store
-      - tooling-node-modules:/workspace/node_modules
-      - tooling-demo-node-modules:/workspace/examples/demo-service/node_modules
+      - devbox-pnpm-store:/pnpm/store
+      - devbox-node-modules:/workspace/node_modules
 
-  kryo-mcp:
+  mcp:
     build:
       context: .
     restart: unless-stopped
@@ -19,16 +18,52 @@ services:
         condition: service_healthy
       campfire:
         condition: service_healthy
-      demo-service:
+      gitea:
         condition: service_healthy
-    env_file:
-      - path: .env
-        required: false
     environment:
-      FIZZY_URL: http://fizzy
-      CAMPFIRE_URL: http://campfire
+      FIZZY_API_TOKEN: ${FIZZY_API_TOKEN:-}
+      FIZZY_ACCOUNT_ID: ${FIZZY_ACCOUNT_ID:-}
+      FIZZY_BOARD_ID: ${FIZZY_BOARD_ID:-}
+      FIZZY_BOARD_SELECTION: ${FIZZY_BOARD_SELECTION:-configured}
+      FIZZY_URL: ${FIZZY_URL:-http://kryo-fizzy}
+      CAMPFIRE_BOT_KEY: ${CAMPFIRE_BOT_KEY:-}
+      CAMPFIRE_ROOM_ID: ${CAMPFIRE_ROOM_ID:-}
+      CAMPFIRE_ROOM_SELECTION: ${CAMPFIRE_ROOM_SELECTION:-configured}
+      CAMPFIRE_URL: ${CAMPFIRE_URL:-http://kryo-campfire}
+      CAMPFIRE_SESSION_COOKIE: ${CAMPFIRE_SESSION_COOKIE:-}
+      CAMPFIRE_TRANSCRIPT_LIMIT: ${CAMPFIRE_TRANSCRIPT_LIMIT:-100}
+      CAMPFIRE_RECENT_MESSAGES_LIMIT: ${CAMPFIRE_RECENT_MESSAGES_LIMIT:-20}
+      GIT_FORGE_PROVIDER: ${GIT_FORGE_PROVIDER:-gitea}
+      GIT_FORGE_API_URL: ${GIT_FORGE_API_URL:-http://kryo-gitea:3000/api/v1}
+      GIT_FORGE_TOKEN: ${GIT_FORGE_TOKEN:-}
+      GIT_FORGE_REPO: ${GIT_FORGE_REPO:-}
+      GIT_FORGE_ALLOW_REPO_OVERRIDE: ${GIT_FORGE_ALLOW_REPO_OVERRIDE:-false}
+      GIT_FORGE_DEFAULT_BRANCH: ${GIT_FORGE_DEFAULT_BRANCH:-main}
+      GIT_FORGE_MERGE_METHOD: ${GIT_FORGE_MERGE_METHOD:-squash}
+      GIT_FORGE_SUPPORTS_CHECK_RUNS: ${GIT_FORGE_SUPPORTS_CHECK_RUNS:-false}
+      WORKFLOW_TODO_COLUMN: ${WORKFLOW_TODO_COLUMN:-To Do}
+      WORKFLOW_IN_PROGRESS_COLUMN: ${WORKFLOW_IN_PROGRESS_COLUMN:-In Progress}
+      WORKFLOW_REVIEW_COLUMN: ${WORKFLOW_REVIEW_COLUMN:-Review}
+      WORKFLOW_BLOCKED_COLUMN: ${WORKFLOW_BLOCKED_COLUMN:-Blocked}
+      WORKFLOW_DONE_LABEL: ${WORKFLOW_DONE_LABEL:-Done}
+      WORKFLOW_NOT_NOW_LABEL: ${WORKFLOW_NOT_NOW_LABEL:-Not Now}
+      WORKFLOW_TRIAGE_LABEL: ${WORKFLOW_TRIAGE_LABEL:-Triage}
+      CARD_DESCRIPTION_PREVIEW_LIMIT: ${CARD_DESCRIPTION_PREVIEW_LIMIT:-500}
+      BOARD_STATUS_VISIBLE_CARDS_LIMIT: ${BOARD_STATUS_VISIBLE_CARDS_LIMIT:-5}
+      TROUBLESHOOT_ERROR_LIMIT: ${TROUBLESHOOT_ERROR_LIMIT:-1500}
       MCP_HOST: 0.0.0.0
-      MCP_TRANSPORT: streamable-http
+      MCP_TRANSPORT: ${MCP_TRANSPORT:-streamable-http}
+      MCP_HTTP_SESSION_MODE: ${MCP_HTTP_SESSION_MODE:-stateful}
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-localhost,127.0.0.1,mcp}
+      MCP_SESSION_IDLE_TTL_MS: ${MCP_SESSION_IDLE_TTL_MS:-1800000}
+      MCP_MAX_SESSIONS: ${MCP_MAX_SESSIONS:-100}
+      MCP_PORT: ${MCP_PORT:-3100}
+      MCP_PATH: ${MCP_PATH:-/mcp}
+      BOT_WEBHOOK_PATH: ${BOT_WEBHOOK_PATH:-/campfire/webhook}
+      BOT_WEBHOOK_SHARED_SECRET: ${BOT_WEBHOOK_SHARED_SECRET:-}
+      BOT_WEBHOOK_SHARED_SECRET_HEADER: ${BOT_WEBHOOK_SHARED_SECRET_HEADER:-x-kryo-webhook-secret}
+      REQUEST_TIMEOUT_MS: ${REQUEST_TIMEOUT_MS:-10000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "3100:3100"
     healthcheck:
@@ -38,21 +73,78 @@ services:
       retries: 6
       start_period: 15s
 
-  demo-service:
-    build:
-      context: .
-      dockerfile: examples/demo-service/Dockerfile
+  prometheus:
+    image: prom/prometheus:v3.4.2
+    profiles: ["observability"]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      blackbox-exporter:
+        condition: service_started
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.27.0
+    profiles: ["observability"]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/blackbox_exporter/config.yml
+    volumes:
+      - ./observability/blackbox/config.yml:/etc/blackbox_exporter/config.yml:ro
+    ports:
+      - "9115:9115"
+
+  loki:
+    image: grafana/loki:3.5.5
+    profiles: ["observability"]
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/loki/config.yml
+    volumes:
+      - ./observability/loki/config.yml:/etc/loki/config.yml:ro
+      - loki-data:/loki
+    ports:
+      - "3101:3100"
+
+  promtail:
+    image: grafana/promtail:3.5.5
+    profiles: ["observability"]
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./observability/promtail/config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - promtail-data:/tmp
+    depends_on:
+      loki:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:12.1.1
+    profiles: ["observability"]
     restart: unless-stopped
     environment:
-      PORT: 4000
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
     ports:
-      - "4000:4000"
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:4000/ >/dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 10s
+      - "3001:3000"
+    depends_on:
+      prometheus:
+        condition: service_started
+      loki:
+        condition: service_started
 
   fizzy:
     image: ghcr.io/basecamp/fizzy:main
@@ -65,8 +157,12 @@ services:
       BASE_URL: http://localhost:3006
     volumes:
       - fizzy-data:/rails/storage
+    networks:
+      default:
+        aliases:
+          - kryo-fizzy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/up >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/up >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -83,8 +179,37 @@ services:
       DISABLE_SSL: "true"
     volumes:
       - campfire-data:/rails/storage
+    networks:
+      default:
+        aliases:
+          - kryo-campfire
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/up >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/up >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+
+  gitea:
+    image: gitea/gitea:1.24-rootless
+    restart: unless-stopped
+    ports:
+      - "3007:3000"
+    environment:
+      ROOT_URL: ${BOOTSTRAP_GITEA_ROOT_URL:-http://localhost:3007}
+      DB_TYPE: sqlite3
+      INSTALL_LOCK: "true"
+      DISABLE_REGISTRATION: "true"
+      REQUIRE_SIGNIN_VIEW: "true"
+      SECRET_KEY: ${SECRET_KEY_BASE}
+    volumes:
+      - gitea-data:/var/lib/gitea
+    networks:
+      default:
+        aliases:
+          - kryo-gitea
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:3000/api/healthz >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -93,6 +218,10 @@ services:
 volumes:
   fizzy-data:
   campfire-data:
-  tooling-pnpm-store:
-  tooling-node-modules:
-  tooling-demo-node-modules:
+  gitea-data:
+  devbox-pnpm-store:
+  devbox-node-modules:
+  prometheus-data:
+  loki-data:
+  promtail-data:
+  grafana-data:

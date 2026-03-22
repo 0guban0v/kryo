@@ -14,7 +14,7 @@ import { createMissionControlServer } from "./server.js";
 const config = loadConfig();
 const logger = new Logger(config.logLevel);
 const services = createServices(config, logger);
-const app = createMissionControlHttpApp(config.mcp.host);
+const app = createMissionControlHttpApp(config.mcp.allowedHosts);
 
 registerCampfireBotRoutes(app, services);
 registerMcpHttpRoutes(app, services);

@@ -1,13 +1,12 @@
+!.env.example
+*.env
 .git
 .github
 .claude
 node_modules
 build
-sample-service/node_modules
-sample-service/build
 deploy
 plan
-.env
 .DS_Store
 README.md
 VIDEO_SCRIPT.md

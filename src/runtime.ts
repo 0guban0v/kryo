@@ -44,6 +44,7 @@ export function createServices(
       apiUrl: config.github.apiUrl,
       token: config.github.token,
       defaultRepo: config.github.defaultRepo,
+      allowRepoOverride: config.github.allowRepoOverride,
       defaultBranch: config.github.defaultBranch,
       mergeMethod: config.github.mergeMethod,
       supportsCheckRuns: config.github.capabilities.checkRuns,

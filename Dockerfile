@@ -4,7 +4,6 @@ WORKDIR /app
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY pnpm-workspace.yaml ./
-COPY examples/demo-service/package.json ./examples/demo-service/package.json
 RUN corepack enable && pnpm install --frozen-lockfile
 
 FROM deps AS build

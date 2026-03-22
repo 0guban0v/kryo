@@ -1,14 +1,7 @@
 {
   "files": {
     "ignoreUnknown": true,
-    "ignore": [
-      ".claude",
-      ".pnpm-store",
-      "build",
-      "node_modules",
-      "examples/demo-service/build",
-      "examples/demo-service/node_modules"
-    ]
+    "ignore": [".claude", ".pnpm-store", "build", "node_modules"]
   },
   "formatter": {
     "enabled": true,

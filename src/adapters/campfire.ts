@@ -124,7 +124,7 @@ export class CampfireClient {
         roomId,
         roomName: input.roomName ?? `Room ${roomId}`,
         body: input.body,
-        senderName: "kryo-mcp",
+        senderName: "kryo",
         observedAt: new Date().toISOString(),
         path,
         source: "bot",

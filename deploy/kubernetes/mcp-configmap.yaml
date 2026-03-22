@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mcp-config
+data:
+  # Replace these URLs per environment. They are placeholders, not assumed in-cluster defaults.
+  FIZZY_URL: http://fizzy.replace-me.svc.cluster.local
+  FIZZY_ACCOUNT_ID: "897362094"
+  FIZZY_BOARD_SELECTION: configured
+  CAMPFIRE_URL: http://campfire.replace-me.svc.cluster.local
+  CAMPFIRE_ROOM_SELECTION: configured
+  CAMPFIRE_TRANSCRIPT_LIMIT: "100"
+  CAMPFIRE_RECENT_MESSAGES_LIMIT: "20"
+  GIT_FORGE_PROVIDER: github
+  GIT_FORGE_API_URL: https://api.github.com
+  GIT_FORGE_REPO: your-org/kryo
+  GIT_FORGE_DEFAULT_BRANCH: main
+  GIT_FORGE_MERGE_METHOD: squash
+  GIT_FORGE_SUPPORTS_CHECK_RUNS: ""
+  WORKFLOW_TODO_COLUMN: To Do
+  WORKFLOW_IN_PROGRESS_COLUMN: In Progress
+  WORKFLOW_REVIEW_COLUMN: Review
+  WORKFLOW_BLOCKED_COLUMN: Blocked
+  WORKFLOW_DONE_LABEL: Done
+  WORKFLOW_NOT_NOW_LABEL: Not Now
+  WORKFLOW_TRIAGE_LABEL: Triage
+  CARD_DESCRIPTION_PREVIEW_LIMIT: "500"
+  BOARD_STATUS_VISIBLE_CARDS_LIMIT: "5"
+  TROUBLESHOOT_ERROR_LIMIT: "1500"
+  MCP_TRANSPORT: streamable-http
+  MCP_HTTP_SESSION_MODE: stateless
+  MCP_HOST: 0.0.0.0
+  MCP_PORT: "3100"
+  MCP_PATH: /mcp
+  BOT_WEBHOOK_PATH: /campfire/webhook
+  BOT_WEBHOOK_SHARED_SECRET_HEADER: x-kryo-webhook-secret
+  REQUEST_TIMEOUT_MS: "10000"
+  LOG_LEVEL: info

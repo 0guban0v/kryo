@@ -48,11 +48,7 @@ export function registerCampfireBotRoutes(
       services.logger.error("Campfire webhook handling failed.", {
         error: error instanceof Error ? error.message : String(error),
       });
-      return context.text(
-        `Kryo bot error: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
+      return context.text("Kryo bot error", 500);
     }
   });
 }

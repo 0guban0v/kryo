@@ -18,7 +18,7 @@ import { normalizeName } from "../utils/markdown.js";
 
 export type CardReference = number | string | Pick<FizzyCard, "id" | "number">;
 
-export interface FizzyCardListFilters {
+interface FizzyCardListFilters {
   boardIds?: string[] | undefined;
   tagIds?: string[] | undefined;
   assigneeIds?: string[] | undefined;
@@ -33,14 +33,14 @@ export interface FizzyCardListFilters {
   terms?: string[] | undefined;
 }
 
-export interface CreateFizzyCardInput {
+interface CreateFizzyCardInput {
   title: string;
   description?: string | undefined;
   created_at?: string | undefined;
   last_active_at?: string | undefined;
 }
 
-export interface UpdateFizzyCardInput {
+interface UpdateFizzyCardInput {
   title?: string | undefined;
   description?: string | undefined;
   last_active_at?: string | undefined;

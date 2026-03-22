@@ -5,6 +5,7 @@ import { z } from "zod";
 import type {
   GitForgeProvider,
   GitHubMergeMethod,
+  HttpSessionMode,
   TransportMode,
 } from "./types.js";
 
@@ -38,6 +39,40 @@ const optionalNonEmptyString = z.preprocess((value) => {
   return value;
 }, z.string().min(1).optional());
 
+const optionalCommaSeparatedStrings = z.preprocess((value) => {
+  if (value === undefined || value === "") {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return value
+      .split(",")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  return value;
+}, z.array(z.string().min(1)).optional());
+
+function firstDefined(
+  source: NodeJS.ProcessEnv,
+  ...keys: string[]
+): string | undefined {
+  for (const key of keys) {
+    const value = source[key];
+
+    if (value !== undefined) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
 const envSchema = z.object({
   FIZZY_URL: z.string().url(),
   FIZZY_API_TOKEN: z.string().min(1),
@@ -60,11 +95,14 @@ const envSchema = z.object({
     .positive()
     .default(20),
   GIT_FORGE_PROVIDER: z.enum(["github", "ghes", "gitea"]).default("github"),
-  GITHUB_API_URL: z.string().url().default("https://api.github.com"),
-  GITHUB_TOKEN: optionalNonEmptyString,
-  GITHUB_REPO: optionalNonEmptyString,
-  GITHUB_DEFAULT_BRANCH: z.string().min(1).default("main"),
-  GITHUB_MERGE_METHOD: z.enum(["merge", "squash", "rebase"]).default("squash"),
+  GIT_FORGE_API_URL: z.string().url().default("https://api.github.com"),
+  GIT_FORGE_TOKEN: optionalNonEmptyString,
+  GIT_FORGE_REPO: optionalNonEmptyString,
+  GIT_FORGE_ALLOW_REPO_OVERRIDE: optionalBoolean,
+  GIT_FORGE_DEFAULT_BRANCH: z.string().min(1).default("main"),
+  GIT_FORGE_MERGE_METHOD: z
+    .enum(["merge", "squash", "rebase"])
+    .default("squash"),
   GIT_FORGE_SUPPORTS_CHECK_RUNS: optionalBoolean,
   WORKFLOW_TODO_COLUMN: z.string().min(1).default("To Do"),
   WORKFLOW_IN_PROGRESS_COLUMN: z.string().min(1).default("In Progress"),
@@ -85,7 +123,15 @@ const envSchema = z.object({
     .default(5),
   TROUBLESHOOT_ERROR_LIMIT: z.coerce.number().int().positive().default(1500),
   MCP_TRANSPORT: z.enum(["stdio", "streamable-http"]).default("stdio"),
+  MCP_HTTP_SESSION_MODE: z.enum(["stateful", "stateless"]).default("stateful"),
   MCP_HOST: z.string().min(1).default("127.0.0.1"),
+  MCP_ALLOWED_HOSTS: optionalCommaSeparatedStrings,
+  MCP_SESSION_IDLE_TTL_MS: z.coerce
+    .number()
+    .int()
+    .positive()
+    .default(1_800_000),
+  MCP_MAX_SESSIONS: z.coerce.number().int().positive().default(100),
   MCP_PORT: z.coerce.number().int().positive().default(3100),
   MCP_PATH: z.string().min(1).default("/mcp"),
   BOT_WEBHOOK_PATH: z.string().min(1).default("/campfire/webhook"),
@@ -120,6 +166,7 @@ export interface AppConfig {
     apiUrl: string;
     token?: string;
     defaultRepo?: string;
+    allowRepoOverride: boolean;
     defaultBranch: string;
     mergeMethod: GitHubMergeMethod;
     capabilities: {
@@ -142,7 +189,11 @@ export interface AppConfig {
   };
   mcp: {
     transport: TransportMode;
+    httpSessionMode: HttpSessionMode;
     host: string;
+    allowedHosts: string[];
+    sessionIdleTtlMs: number;
+    maxSessions: number;
     port: number;
     path: string;
   };
@@ -161,12 +212,60 @@ function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
 }
 
+function normalizeHost(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "");
+}
+
+function defaultAllowedHosts(host: string): string[] {
+  const normalizedHost = normalizeHost(host);
+
+  if (normalizedHost === "0.0.0.0" || normalizedHost === "::") {
+    return ["127.0.0.1", "localhost", "::1", "mcp"];
+  }
+
+  if (
+    normalizedHost === "127.0.0.1" ||
+    normalizedHost === "localhost" ||
+    normalizedHost === "::1"
+  ) {
+    return ["127.0.0.1", "localhost", "::1"];
+  }
+
+  return [normalizedHost];
+}
+
 function defaultCheckRunSupport(provider: GitForgeProvider): boolean {
   return provider !== "gitea";
 }
 
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
-  const env = envSchema.parse(source);
+  const env = envSchema.parse({
+    ...source,
+    GIT_FORGE_API_URL: firstDefined(
+      source,
+      "GIT_FORGE_API_URL",
+      "GITHUB_API_URL",
+    ),
+    GIT_FORGE_TOKEN: firstDefined(source, "GIT_FORGE_TOKEN", "GITHUB_TOKEN"),
+    GIT_FORGE_REPO: firstDefined(source, "GIT_FORGE_REPO", "GITHUB_REPO"),
+    GIT_FORGE_ALLOW_REPO_OVERRIDE: firstDefined(
+      source,
+      "GIT_FORGE_ALLOW_REPO_OVERRIDE",
+    ),
+    GIT_FORGE_DEFAULT_BRANCH: firstDefined(
+      source,
+      "GIT_FORGE_DEFAULT_BRANCH",
+      "GITHUB_DEFAULT_BRANCH",
+    ),
+    GIT_FORGE_MERGE_METHOD: firstDefined(
+      source,
+      "GIT_FORGE_MERGE_METHOD",
+      "GITHUB_MERGE_METHOD",
+    ),
+  });
 
   return {
     fizzy: {
@@ -189,11 +288,12 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     github: {
       provider: env.GIT_FORGE_PROVIDER,
-      apiUrl: trimTrailingSlash(env.GITHUB_API_URL),
-      ...(env.GITHUB_TOKEN ? { token: env.GITHUB_TOKEN } : {}),
-      ...(env.GITHUB_REPO ? { defaultRepo: env.GITHUB_REPO } : {}),
-      defaultBranch: env.GITHUB_DEFAULT_BRANCH,
-      mergeMethod: env.GITHUB_MERGE_METHOD,
+      apiUrl: trimTrailingSlash(env.GIT_FORGE_API_URL),
+      ...(env.GIT_FORGE_TOKEN ? { token: env.GIT_FORGE_TOKEN } : {}),
+      ...(env.GIT_FORGE_REPO ? { defaultRepo: env.GIT_FORGE_REPO } : {}),
+      allowRepoOverride: env.GIT_FORGE_ALLOW_REPO_OVERRIDE ?? false,
+      defaultBranch: env.GIT_FORGE_DEFAULT_BRANCH,
+      mergeMethod: env.GIT_FORGE_MERGE_METHOD,
       capabilities: {
         checkRuns:
           env.GIT_FORGE_SUPPORTS_CHECK_RUNS ??
@@ -216,7 +316,13 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     mcp: {
       transport: env.MCP_TRANSPORT,
+      httpSessionMode: env.MCP_HTTP_SESSION_MODE,
       host: env.MCP_HOST,
+      allowedHosts:
+        env.MCP_ALLOWED_HOSTS?.map((host) => normalizeHost(host)) ??
+        defaultAllowedHosts(env.MCP_HOST),
+      sessionIdleTtlMs: env.MCP_SESSION_IDLE_TTL_MS,
+      maxSessions: env.MCP_MAX_SESSIONS,
       port: env.MCP_PORT,
       path: env.MCP_PATH,
     },

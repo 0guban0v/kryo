@@ -1,25 +1,25 @@
 {
-  "name": "kryo-mcp",
+  "name": "kryo",
   "version": "0.1.0",
   "private": true,
   "description": "Self-hosted MCP server for AI-powered developer workflow orchestration across Fizzy, Campfire, and GitHub.",
   "type": "module",
   "packageManager": "pnpm@10.0.0",
   "bin": {
-    "kryo-mcp": "./build/src/index.js"
+    "kryo": "./build/src/index.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "dev": "tsx watch src/index.ts",
     "start": "node build/src/index.js",
-    "test": "pnpm run build && node --test build/tests/**/*.test.js",
+    "test": "pnpm run test:offline",
+    "test:offline": "pnpm run build && node --test build/tests/**/*.test.js",
+    "test:online": "pnpm run build && node --test build/tests/mcp-http.e2e.js",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "demo-service:build": "pnpm --filter kryo-demo-service run build",
-    "demo-service:dev": "pnpm --filter kryo-demo-service run dev",
-    "demo-service:test": "pnpm --filter kryo-demo-service run test",
-    "demo-service:test:demo": "pnpm --filter kryo-demo-service run test:demo"
+    "deadcode": "knip",
+    "quality": "pnpm run format && pnpm run lint && pnpm run deadcode"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.11",
@@ -31,6 +31,7 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/node": "^22.13.8",
+    "knip": "^6.0.1",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2"
   },

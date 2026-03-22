@@ -28,7 +28,7 @@ export function registerSubmitForReviewTool(
           .string()
           .optional()
           .describe(
-            "GitHub repo in owner/name format. Defaults to GITHUB_REPO.",
+            "Git forge repo in owner/name format. Defaults to GIT_FORGE_REPO and is rejected unless GIT_FORGE_ALLOW_REPO_OVERRIDE=true.",
           ),
         branch: z
           .string()
@@ -36,7 +36,7 @@ export function registerSubmitForReviewTool(
         base: z
           .string()
           .optional()
-          .describe("Target branch. Defaults to GITHUB_DEFAULT_BRANCH."),
+          .describe("Target branch. Defaults to GIT_FORGE_DEFAULT_BRANCH."),
         title: z.string().describe("Pull request title."),
         body: z
           .string()

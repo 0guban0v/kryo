@@ -89,7 +89,7 @@ export async function notifyCampfireIfNeeded(
   }
 }
 
-export async function resolveTarget(
+async function resolveTarget(
   services: MissionControlServices,
   boardId: string,
   targetColumn: string,

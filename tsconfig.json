@@ -17,5 +17,5 @@
     "esModuleInterop": true
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"],
-  "exclude": ["build", "node_modules", "examples/demo-service"]
+  "exclude": ["build", "node_modules"]
 }

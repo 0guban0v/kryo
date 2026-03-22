@@ -25,6 +25,7 @@ export class GitForgeClient {
       apiUrl: string;
       token?: string | undefined;
       defaultRepo?: string | undefined;
+      allowRepoOverride: boolean;
       defaultBranch: string;
       mergeMethod: GitHubMergeMethod;
       supportsCheckRuns?: boolean | undefined;
@@ -35,6 +36,16 @@ export class GitForgeClient {
 
   resolveRepo(repo?: string): string {
     if (repo) {
+      if (
+        this.options.defaultRepo &&
+        !this.options.allowRepoOverride &&
+        repo !== this.options.defaultRepo
+      ) {
+        throw new Error(
+          `Repo overrides are disabled. Requested ${repo}, but GIT_FORGE_REPO is locked to ${this.options.defaultRepo}.`,
+        );
+      }
+
       return repo;
     }
 
@@ -43,7 +54,7 @@ export class GitForgeClient {
     }
 
     throw new Error(
-      "No git forge repo was provided and GITHUB_REPO is not configured.",
+      "No git forge repo was provided and GIT_FORGE_REPO is not configured.",
     );
   }
 
@@ -227,7 +238,7 @@ export class GitForgeClient {
   private requestHeaders(): HeadersInit {
     if (!this.options.token) {
       throw new Error(
-        "GITHUB_TOKEN is required for git forge workflows such as submit_for_review and complete_work.",
+        "GIT_FORGE_TOKEN is required for git forge workflows such as submit_for_review and complete_work.",
       );
     }
 

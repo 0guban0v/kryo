@@ -1,6 +1,7 @@
 node_modules
 build
-sample-service/build
 .pnpm-store
-.env
+*.env
+!.env.example
+.grafana
 .DS_Store
