@@ -33,21 +33,7 @@ Then access:
 - Campfire: `http://localhost:3000`
 - Gitea: `http://localhost:3007`
 
-`make bootstrap` is the idempotent environment-seeding step behind `make deploy` and `make deploy-all`.
-It creates or reuses the local Fizzy account/token, Campfire room/bot, and a local Gitea repo owned by a dedicated service user, then updates the selected env file with:
-
-- `FIZZY_ACCOUNT_ID`
-- `FIZZY_API_TOKEN`
-- `CAMPFIRE_ROOM_ID`
-- `CAMPFIRE_BOT_KEY`
-- `GIT_FORGE_API_URL`
-- `GIT_FORGE_TOKEN`
-- `GIT_FORGE_REPO`
-
-For local browser logins, the bootstrap defaults are service-specific: Fizzy uses `fizzy-admin@demo.local` with the development magic-link flow, and Campfire uses the seeded platform admin at `campfire-admin@demo.local` / `campfire-admin`. The only other seeded Campfire identity is the `Kryo` bot.
-Gitea uses `gitea-admin` / `gitea-admin` for the admin UI and seeds a `platform-team` account that owns the repo Kryo is allowed to edit by default.
-If you are using a browser without devtools, run `make fizzy-login-code` to print a fresh Fizzy sign-in code for the bootstrap email.
-For local code health checks, run `make quality` to verify formatting, lint the repo, and detect dead code with `knip`.
+`make deploy` runs the idempotent bootstrap flow and starts the local stack. Installation details, seeded demo identities, login helpers, and the broader Make target reference live in the docs.
 
 ## Docs
 
@@ -56,18 +42,3 @@ For local code health checks, run `make quality` to verify formatting, lint the 
 - [Integrations](docs/integrations.md)
 - [Observability](docs/observability.md)
 - [Security](docs/security.md)
-
-## Repository Layout
-
-```text
-.
-|-- Dockerfile
-|-- Makefile
-|-- docker-compose.yml
-|-- docs/
-|-- observability/
-|-- scripts/
-|-- src/
-|-- tests/
-`-- deploy/
-```

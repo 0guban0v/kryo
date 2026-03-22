@@ -8,6 +8,7 @@ import type {
   HttpSessionMode,
   TransportMode,
 } from "./types.js";
+import { normalizeHost } from "./utils/host.js";
 
 const optionalBoolean = z.preprocess((value) => {
   if (value === undefined || value === "") {
@@ -135,6 +136,7 @@ const envSchema = z.object({
   MCP_PORT: z.coerce.number().int().positive().default(3100),
   MCP_PATH: z.string().min(1).default("/mcp"),
   BOT_WEBHOOK_PATH: z.string().min(1).default("/campfire/webhook"),
+  BOT_WEBHOOK_AUTH: z.enum(["shared-secret", "none"]).default("shared-secret"),
   BOT_WEBHOOK_SHARED_SECRET: optionalNonEmptyString,
   BOT_WEBHOOK_SHARED_SECRET_HEADER: z
     .string()
@@ -200,6 +202,7 @@ export interface AppConfig {
   bot: {
     webhookPath: string;
     auth: {
+      mode: "shared-secret" | "none";
       sharedSecret?: string;
       headerName: string;
     };
@@ -210,13 +213,6 @@ export interface AppConfig {
 
 function trimTrailingSlash(value: string): string {
   return value.replace(/\/+$/, "");
-}
-
-function normalizeHost(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/^\[|\]$/g, "");
 }
 
 function defaultAllowedHosts(host: string): string[] {
@@ -266,6 +262,16 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       "GITHUB_MERGE_METHOD",
     ),
   });
+
+  if (
+    env.MCP_TRANSPORT === "streamable-http" &&
+    env.BOT_WEBHOOK_AUTH === "shared-secret" &&
+    !env.BOT_WEBHOOK_SHARED_SECRET
+  ) {
+    throw new Error(
+      "BOT_WEBHOOK_SHARED_SECRET is required when BOT_WEBHOOK_AUTH=shared-secret and MCP_TRANSPORT=streamable-http. Set BOT_WEBHOOK_AUTH=none only if webhook authentication is enforced outside kryo.",
+    );
+  }
 
   return {
     fizzy: {
@@ -329,6 +335,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     bot: {
       webhookPath: env.BOT_WEBHOOK_PATH,
       auth: {
+        mode: env.BOT_WEBHOOK_AUTH,
         headerName: env.BOT_WEBHOOK_SHARED_SECRET_HEADER,
         ...(env.BOT_WEBHOOK_SHARED_SECRET
           ? { sharedSecret: env.BOT_WEBHOOK_SHARED_SECRET }

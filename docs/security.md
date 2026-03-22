@@ -17,8 +17,13 @@ Campfire does not natively sign webhook requests. Treat bot endpoint hardening a
 
 `kryo` also supports an optional shared-secret boundary header:
 
+- `BOT_WEBHOOK_AUTH=shared-secret|none`
 - `BOT_WEBHOOK_SHARED_SECRET`
 - `BOT_WEBHOOK_SHARED_SECRET_HEADER`
+
+When `BOT_WEBHOOK_AUTH=shared-secret`, `BOT_WEBHOOK_SHARED_SECRET` must be set for
+HTTP deployments. Set `BOT_WEBHOOK_AUTH=none` only when an ingress, proxy, or
+private network boundary is intentionally enforcing webhook access outside the app.
 
 ## TLS Boundary
 

@@ -12,6 +12,9 @@ import { logger as honoLogger } from "hono/logger";
 
 import type { MissionControlServices } from "./runtime.js";
 import { createMissionControlServer } from "./server.js";
+import { AsyncMutex } from "./utils/async-mutex.js";
+import { normalizeHost } from "./utils/host.js";
+import { errorMessage } from "./utils/http.js";
 
 interface StreamableSession {
   server: McpServer;
@@ -24,9 +27,25 @@ export interface HttpServerHandle {
   close(callback: (error?: Error | null) => void): void;
 }
 
+export interface McpHttpRuntimeHandle {
+  closeActiveSessions(): Promise<void>;
+  activeSessionCount(): number;
+}
+
 type ParsedJsonBody = { ok: true; value: unknown } | { ok: false };
 
+const NOOP_MCP_RUNTIME: McpHttpRuntimeHandle = {
+  closeActiveSessions: async () => undefined,
+  activeSessionCount: () => 0,
+};
+
 export function createMissionControlHttpApp(allowedHosts: string[]): Hono {
+  if (allowedHosts.length === 0) {
+    throw new Error(
+      "createMissionControlHttpApp requires at least one allowed host.",
+    );
+  }
+
   const app = new Hono();
   const normalizedAllowedHosts = new Set(
     allowedHosts.map((host) => normalizeHost(host)),
@@ -49,48 +68,56 @@ export function createMissionControlHttpApp(allowedHosts: string[]): Hono {
 export function registerMcpHttpRoutes(
   app: Hono,
   services: MissionControlServices,
-): void {
+): McpHttpRuntimeHandle {
   if (services.config.mcp.transport === "streamable-http") {
     if (services.config.mcp.httpSessionMode === "stateless") {
       registerStatelessStreamableHttpRoutes(app, services);
-      return;
+      return NOOP_MCP_RUNTIME;
     }
 
-    registerStatefulStreamableHttpRoutes(app, services);
+    return registerStatefulStreamableHttpRoutes(app, services);
   }
+
+  return NOOP_MCP_RUNTIME;
 }
 
 function registerStatefulStreamableHttpRoutes(
   app: Hono,
   services: MissionControlServices,
-): void {
+): McpHttpRuntimeHandle {
   const sessions: Record<string, StreamableSession> = {};
+  let pendingInitializations = 0;
+  const sessionLock = new AsyncMutex();
 
   app.all(services.config.mcp.path, async (context) => {
-    await evictExpiredSessions(
-      sessions,
-      services.config.mcp.sessionIdleTtlMs,
-      Date.now(),
-    );
-
     const sessionId = context.req.header("mcp-session-id");
 
     try {
-      if (sessionId && sessions[sessionId]) {
-        sessions[sessionId].lastSeenAt = Date.now();
-        return sessions[sessionId].transport.handleRequest(context.req.raw);
+      const existingSession = await sessionLock.runExclusive(async () => {
+        await evictExpiredSessions(
+          sessions,
+          services.config.mcp.sessionIdleTtlMs,
+          Date.now(),
+        );
+
+        if (!sessionId) {
+          return undefined;
+        }
+
+        const session = sessions[sessionId];
+
+        if (session) {
+          session.lastSeenAt = Date.now();
+        }
+
+        return session;
+      });
+
+      if (existingSession) {
+        return existingSession.transport.handleRequest(context.req.raw);
       }
 
       if (context.req.method === "POST" && !sessionId) {
-        if (Object.keys(sessions).length >= services.config.mcp.maxSessions) {
-          return jsonRpcError(
-            context,
-            503,
-            -32000,
-            "Too many active MCP sessions",
-          );
-        }
-
         const parsedBody = await parseJsonBody(context);
 
         if (!parsedBody.ok) {
@@ -100,15 +127,23 @@ function registerStatefulStreamableHttpRoutes(
         if (isInitializeRequest(parsedBody.value)) {
           const server = createMissionControlServer(services);
           const initializedAt = Date.now();
+          let admissionReserved = false;
           const transport = new WebStandardStreamableHTTPServerTransport({
             sessionIdGenerator: () => randomUUID(),
-            onsessioninitialized: (generatedSessionId) => {
-              sessions[generatedSessionId] = {
-                server,
-                transport,
-                lastSeenAt: initializedAt,
-                closing: false,
-              };
+            onsessioninitialized: async (generatedSessionId) => {
+              await sessionLock.runExclusive(async () => {
+                if (admissionReserved) {
+                  pendingInitializations -= 1;
+                  admissionReserved = false;
+                }
+
+                sessions[generatedSessionId] = {
+                  server,
+                  transport,
+                  lastSeenAt: initializedAt,
+                  closing: false,
+                };
+              });
             },
           });
 
@@ -119,10 +154,61 @@ function registerStatefulStreamableHttpRoutes(
             }
           };
 
-          await server.connect(transport);
-          return transport.handleRequest(context.req.raw, {
-            parsedBody: parsedBody.value,
+          const admitted = await sessionLock.runExclusive(async () => {
+            await evictExpiredSessions(
+              sessions,
+              services.config.mcp.sessionIdleTtlMs,
+              Date.now(),
+            );
+
+            if (
+              Object.keys(sessions).length + pendingInitializations >=
+              services.config.mcp.maxSessions
+            ) {
+              return false;
+            }
+
+            pendingInitializations += 1;
+            admissionReserved = true;
+            return true;
           });
+
+          if (!admitted) {
+            return jsonRpcError(
+              context,
+              503,
+              -32000,
+              "Too many active MCP sessions",
+            );
+          }
+
+          const releaseAdmission = async (): Promise<void> => {
+            if (!admissionReserved) {
+              return;
+            }
+
+            await sessionLock.runExclusive(async () => {
+              if (admissionReserved) {
+                pendingInitializations -= 1;
+                admissionReserved = false;
+              }
+            });
+          };
+
+          try {
+            await server.connect(transport);
+            const response = await transport.handleRequest(context.req.raw, {
+              parsedBody: parsedBody.value,
+            });
+
+            await releaseAdmission();
+            return response;
+          } catch (error) {
+            await releaseAdmission();
+            await transport.close().catch(() => undefined);
+            await server.close().catch(() => undefined);
+            throw error;
+          }
         }
       }
 
@@ -148,27 +234,28 @@ function registerStatefulStreamableHttpRoutes(
         message: `Unsupported MCP method ${context.req.method}`,
       });
     } catch (error) {
-      services.logger.error("Streamable MCP request failed.", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-
-      if (error instanceof HTTPException) {
-        throw error;
-      }
-
-      return context.json(
-        {
-          jsonrpc: "2.0",
-          error: {
-            code: -32603,
-            message: "Internal server error",
-          },
-          id: null,
-        },
-        500,
+      return handleMcpRequestError(
+        context,
+        services,
+        error,
+        "Streamable MCP request failed.",
       );
     }
   });
+
+  return {
+    closeActiveSessions: async () => {
+      await sessionLock.runExclusive(async () => {
+        const sessionIds = Object.keys(sessions);
+        await Promise.all(
+          sessionIds.map((sessionId) =>
+            closeSession(sessions, sessionId, { closeTransport: true }),
+          ),
+        );
+      });
+    },
+    activeSessionCount: () => Object.keys(sessions).length,
+  };
 }
 
 function registerStatelessStreamableHttpRoutes(
@@ -194,27 +281,41 @@ function registerStatelessStreamableHttpRoutes(
         ...(parsedBody?.ok ? { parsedBody: parsedBody.value } : {}),
       });
     } catch (error) {
-      services.logger.error("Stateless MCP request failed.", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-
-      if (error instanceof HTTPException) {
-        throw error;
-      }
-
-      return context.json(
-        {
-          jsonrpc: "2.0",
-          error: {
-            code: -32603,
-            message: "Internal server error",
-          },
-          id: null,
-        },
-        500,
+      return handleMcpRequestError(
+        context,
+        services,
+        error,
+        "Stateless MCP request failed.",
       );
     }
   });
+}
+
+function handleMcpRequestError(
+  context: Context,
+  services: MissionControlServices,
+  error: unknown,
+  logMessage: string,
+): Response {
+  services.logger.error(logMessage, {
+    error: errorMessage(error),
+  });
+
+  if (error instanceof HTTPException) {
+    throw error;
+  }
+
+  return context.json(
+    {
+      jsonrpc: "2.0",
+      error: {
+        code: -32603,
+        message: "Internal server error",
+      },
+      id: null,
+    },
+    500,
+  );
 }
 
 function jsonRpcError(
@@ -284,21 +385,10 @@ async function closeSession(
   await session.server.close().catch(() => undefined);
 }
 
-function normalizeHost(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/^\[|\]$/g, "");
-}
-
 function validateHostHeader(
   context: Context,
   allowedHosts: ReadonlySet<string>,
 ): Response | null {
-  if (!allowedHosts.size) {
-    return null;
-  }
-
   const hostHeader = context.req.header("host");
 
   if (!hostHeader) {

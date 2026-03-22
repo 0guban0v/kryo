@@ -11,7 +11,7 @@ The local observability profile includes:
 ## Start It
 
 ```sh
-make observability-up
+make observability-up ENV_FILE=yourname.env
 ```
 
 ## Access

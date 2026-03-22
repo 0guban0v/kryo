@@ -33,6 +33,7 @@ data:
   MCP_PORT: "3100"
   MCP_PATH: /mcp
   BOT_WEBHOOK_PATH: /campfire/webhook
+  BOT_WEBHOOK_AUTH: shared-secret
   BOT_WEBHOOK_SHARED_SECRET_HEADER: x-kryo-webhook-secret
   REQUEST_TIMEOUT_MS: "10000"
   LOG_LEVEL: info

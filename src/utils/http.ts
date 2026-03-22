@@ -1,5 +1,17 @@
+import { normalizeHost } from "./host.js";
+
 type QueryPrimitive = string | number | boolean | null | undefined;
 type QueryValue = QueryPrimitive | QueryPrimitive[];
+
+const METADATA_HOSTS = new Set([
+  "100.100.100.200",
+  "169.254.169.254",
+  "169.254.170.2",
+  "192.0.0.192",
+  "fd00:ec2::254",
+  "metadata",
+  "metadata.google.internal",
+]);
 
 export interface RequestOptions extends Omit<RequestInit, "body"> {
   query?: Record<string, QueryValue> | undefined;
@@ -70,6 +82,16 @@ function buildUrl(
   return url;
 }
 
+function assertSafeUrlTarget(url: URL): void {
+  const hostname = normalizeHost(url.hostname);
+
+  if (METADATA_HOSTS.has(hostname)) {
+    throw new Error(
+      `Refusing outbound HTTP request to metadata host ${hostname}. Configure a non-metadata service URL instead.`,
+    );
+  }
+}
+
 function buildBody(
   body: RequestOptions["body"],
   headers: Headers,
@@ -103,6 +125,7 @@ export async function requestRaw(
 ): Promise<Response> {
   const headers = buildHeaders(options.headers);
   const url = buildUrl(baseUrl, path, options.query);
+  assertSafeUrlTarget(url);
   const body = buildBody(options.body, headers);
   const timeoutMs = options.timeoutMs ?? 10_000;
   const signal = options.signal ?? AbortSignal.timeout(timeoutMs);
@@ -111,6 +134,7 @@ export async function requestRaw(
     ...options,
     headers,
     body,
+    redirect: "manual",
     signal,
   });
 

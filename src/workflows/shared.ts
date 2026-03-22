@@ -1,6 +1,7 @@
 import type { CardReference } from "../adapters/fizzy.js";
 import type { MissionControlServices } from "../runtime.js";
 import type { FizzyCard, FizzyColumn, NotificationOptions } from "../types.js";
+import { errorMessage } from "../utils/http.js";
 import {
   bullet,
   heading,
@@ -83,7 +84,7 @@ export async function notifyCampfireIfNeeded(
   } catch (error) {
     services.logger.warn("Campfire notification skipped.", {
       message,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage(error),
     });
     return false;
   }

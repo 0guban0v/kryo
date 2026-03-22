@@ -73,7 +73,7 @@ These values must be real before recording:
 - `CAMPFIRE_BOT_KEY` if you want proactive chat updates
 - `CAMPFIRE_ROOM_ID`
 - `FIZZY_BOARD_ID`
-- `BOT_WEBHOOK_SHARED_SECRET`
+- `BOT_WEBHOOK_SHARED_SECRET` when `BOT_WEBHOOK_AUTH=shared-secret`
 
 Local browser sign-in defaults after `make bootstrap`:
 
@@ -96,6 +96,7 @@ Recommended git forge settings for the demo:
 Run this before recording:
 
 1. `make deploy`
+   with `ENV_FILE=yourname.env`
 2. confirm `make deploy` populated `FIZZY_ACCOUNT_ID`, `FIZZY_API_TOKEN`, `CAMPFIRE_ROOM_ID`, and `CAMPFIRE_BOT_KEY` in the selected env file
 3. confirm Fizzy is reachable at `http://localhost:3006`
 4. confirm Campfire is reachable at `http://localhost:3000`
@@ -110,7 +111,7 @@ Run this before recording:
 If using the online MCP HTTP test:
 
 1. start the stack
-2. run `make test-online`
+2. run `make test-online ENV_FILE=yourname.env`
 
 ## Recording Flow
 

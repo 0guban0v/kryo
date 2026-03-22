@@ -4,6 +4,7 @@ import type { Context, Hono } from "hono";
 
 import type { MissionControlServices } from "../runtime.js";
 import type { CampfireWebhookPayload } from "../types.js";
+import { errorMessage } from "../utils/http.js";
 import { handleCampfireCommand } from "./commands.js";
 
 function isCampfireWebhookPayload(
@@ -46,7 +47,7 @@ export function registerCampfireBotRoutes(
       return context.text(reply);
     } catch (error) {
       services.logger.error("Campfire webhook handling failed.", {
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage(error),
       });
       return context.text("Kryo bot error", 500);
     }
@@ -57,15 +58,14 @@ function hasAuthorizedBoundarySecret(
   context: Pick<Context, "req">,
   services: MissionControlServices,
 ): boolean {
-  const secret = services.config.bot.auth.sharedSecret;
-
-  if (!secret) {
+  if (services.config.bot.auth.mode === "none") {
     return true;
   }
 
+  const secret = services.config.bot.auth.sharedSecret;
   const provided = context.req.header(services.config.bot.auth.headerName);
 
-  if (!provided) {
+  if (!secret || !provided) {
     return false;
   }
 

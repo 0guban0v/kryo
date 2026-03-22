@@ -21,7 +21,7 @@ make bootstrap ENV_FILE=yourname.env
 If you also want the observability profile:
 
 ```sh
-make deploy-all
+make deploy-all ENV_FILE=yourname.env
 ```
 
 ## What The Bootstrap Does
@@ -55,13 +55,13 @@ Fizzy does not support password login in this local stack. Sign in with the boot
 If you are using VSCodium Simple Browser or another browser without network inspection, run:
 
 ```sh
-make fizzy-login-code
+make fizzy-login-code ENV_FILE=yourname.env
 ```
 
 Override the target email when needed:
 
 ```sh
-make fizzy-login-code EMAIL=someone@example.com
+make fizzy-login-code ENV_FILE=yourname.env EMAIL=someone@example.com
 ```
 
 Defaults for Campfire:
@@ -99,28 +99,30 @@ make bootstrap \
 
 ## Useful Make Targets
 
-- `make bootstrap`
-- `make bootstrap-fizzy`
-- `make bootstrap-campfire`
-- `make bootstrap-gitea`
-- `make deploy`
-- `make deploy-all`
-- `make up`
-- `make down`
-- `make ps`
-- `make logs SERVICE=mcp`
-- `make test-offline`
-- `make test-online`
-- `make lint`
-- `make format`
-- `make deadcode`
-- `make quality`
+All of the targets below are Compose-backed and require `ENV_FILE=...`.
 
-`make test-online` runs the standalone MCP HTTP end-to-end suite against a live server.
+- `make bootstrap ENV_FILE=yourname.env`
+- `make bootstrap-fizzy ENV_FILE=yourname.env`
+- `make bootstrap-campfire ENV_FILE=yourname.env`
+- `make bootstrap-gitea ENV_FILE=yourname.env`
+- `make deploy ENV_FILE=yourname.env`
+- `make deploy-all ENV_FILE=yourname.env`
+- `make up ENV_FILE=yourname.env`
+- `make down ENV_FILE=yourname.env`
+- `make ps ENV_FILE=yourname.env`
+- `make logs ENV_FILE=yourname.env SERVICE=mcp`
+- `make test-offline ENV_FILE=yourname.env`
+- `make test-online ENV_FILE=yourname.env`
+- `make lint ENV_FILE=yourname.env`
+- `make format ENV_FILE=yourname.env`
+- `make deadcode ENV_FILE=yourname.env`
+- `make quality ENV_FILE=yourname.env`
+
+`make test-online ENV_FILE=...` runs the standalone MCP HTTP end-to-end suite against a live server.
 It uses `MCP_E2E_URL`, which defaults to `http://127.0.0.1:3100/mcp`.
 When run through `make test-online`, the devbox container targets the Compose service URL `http://mcp:3100/mcp`.
-`make deadcode` runs `knip`.
-`make quality` runs `format:check`, `lint`, and `deadcode` in one step.
+`make deadcode ENV_FILE=...` runs `knip`.
+`make quality ENV_FILE=...` runs `format:check`, `lint`, and `deadcode` in one step.
 
 ## Access Points
 
@@ -133,3 +135,4 @@ When run through `make test-online`, the devbox container targets the Compose se
 
 If you expose `kryo` on a non-local hostname, set `MCP_ALLOWED_HOSTS` to the ingress or proxy hostnames that should be accepted by the HTTP listener.
 If you use stateful HTTP sessions, tune `MCP_SESSION_IDLE_TTL_MS` and `MCP_MAX_SESSIONS` for your expected client count and reconnect behavior.
+For local disposable stacks, the checked-in example env intentionally sets `BOT_WEBHOOK_AUTH=none`. In deployed HTTP environments, prefer `BOT_WEBHOOK_AUTH=shared-secret` and set `BOT_WEBHOOK_SHARED_SECRET`.

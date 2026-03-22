@@ -10,6 +10,7 @@ import {
 import { Logger } from "./logger.js";
 import { createServices } from "./runtime.js";
 import { createMissionControlServer } from "./server.js";
+import { errorMessage } from "./utils/http.js";
 
 const config = loadConfig();
 const logger = new Logger(config.logLevel);
@@ -17,7 +18,7 @@ const services = createServices(config, logger);
 const app = createMissionControlHttpApp(config.mcp.allowedHosts);
 
 registerCampfireBotRoutes(app, services);
-registerMcpHttpRoutes(app, services);
+const mcpHttpRuntime = registerMcpHttpRoutes(app, services);
 
 const httpServer = await startHttpServer(app, config.mcp.host, config.mcp.port);
 logger.info("HTTP server listening.", {
@@ -26,6 +27,19 @@ logger.info("HTTP server listening.", {
   botWebhookPath: config.bot.webhookPath,
   mcpTransport: config.mcp.transport,
 });
+
+if (
+  config.mcp.transport === "streamable-http" &&
+  config.bot.auth.mode === "none"
+) {
+  logger.warn(
+    "Campfire webhook authentication is disabled inside kryo. Rely on an external network or ingress boundary only if this is intentional.",
+    {
+      webhookPath: config.bot.webhookPath,
+      authMode: config.bot.auth.mode,
+    },
+  );
+}
 
 let stdioServer: ReturnType<typeof createMissionControlServer> | undefined;
 
@@ -40,7 +54,7 @@ async function shutdown(signal: string): Promise<void> {
 
   await stdioServer?.close().catch(() => undefined);
 
-  await new Promise<void>((resolve, reject) => {
+  const httpClosePromise = new Promise<void>((resolve, reject) => {
     httpServer.close((error) => {
       if (error) {
         reject(error);
@@ -49,9 +63,29 @@ async function shutdown(signal: string): Promise<void> {
 
       resolve();
     });
-  }).catch((error) => {
+  });
+
+  const activeSessionCount = mcpHttpRuntime.activeSessionCount();
+  if (activeSessionCount > 0) {
+    logger.info("Closing active MCP HTTP sessions before exit.", {
+      activeSessionCount,
+    });
+  }
+
+  await mcpHttpRuntime.closeActiveSessions().catch((error) => {
+    logger.warn("Closing MCP HTTP sessions encountered an error.", {
+      error: errorMessage(error),
+    });
+  });
+
+  await Promise.race([
+    httpClosePromise,
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, 5_000);
+    }),
+  ]).catch((error) => {
     logger.warn("HTTP shutdown encountered an error.", {
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage(error),
     });
   });
 

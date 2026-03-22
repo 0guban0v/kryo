@@ -4,7 +4,7 @@ import type {
   CampfireRoomSummary,
   CampfireWebhookPayload,
 } from "../types.js";
-import { requestJson, requestText } from "../utils/http.js";
+import { errorMessage, requestJson, requestText } from "../utils/http.js";
 
 interface CampfireApiRoom {
   id: string | number;
@@ -154,7 +154,7 @@ export class CampfireClient {
     } catch (error) {
       this.options.logger?.warn(
         "Campfire room listing fell back to the in-memory transcript store.",
-        error instanceof Error ? error.message : String(error),
+        errorMessage(error),
       );
       return this.transcripts.listRooms();
     }
@@ -196,7 +196,7 @@ export class CampfireClient {
     } catch (error) {
       this.options.logger?.warn(
         "Campfire message listing fell back to the in-memory transcript store.",
-        error instanceof Error ? error.message : String(error),
+        errorMessage(error),
       );
       return this.transcripts.recentMessages(roomId, limit);
     }
