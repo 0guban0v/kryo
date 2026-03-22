@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Check out repository
@@ -34,17 +34,11 @@ jobs:
       - name: Build root project
         run: pnpm run build
 
-      - name: Lint workspace
-        run: pnpm run lint
+      - name: Run quality checks
+        run: pnpm run quality
 
-      - name: Run workflow tests
-        run: pnpm test
-
-      - name: Run demo-service tests
-        run: pnpm run demo-service:test
+      - name: Run offline tests
+        run: pnpm run test:offline
 
       - name: Build main service container
         run: docker build -t kryo-mcp:test .
-
-      - name: Build demo-service container
-        run: docker build -f examples/demo-service/Dockerfile -t kryo-demo-service:test .

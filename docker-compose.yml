@@ -1,6 +1,9 @@
 services:
   devbox:
-    image: node:22-alpine
+    image: kryo-devbox:${KRYO_IMAGE_TAG:-local}
+    build:
+      context: .
+      dockerfile: deploy/compose/devbox/Dockerfile
     profiles: ["devbox"]
     working_dir: /workspace
     command: sh -lc "tail -f /dev/null"
@@ -10,8 +13,11 @@ services:
       - devbox-node-modules:/workspace/node_modules
 
   mcp:
+    image: kryo-mcp:${KRYO_IMAGE_TAG:-local}
     build:
       context: .
+    env_file:
+      - ${MCP_RUNTIME_ENV:-deploy/mcp.env}
     restart: unless-stopped
     depends_on:
       fizzy:
@@ -20,50 +26,6 @@ services:
         condition: service_healthy
       gitea:
         condition: service_healthy
-    environment:
-      FIZZY_API_TOKEN: ${FIZZY_API_TOKEN:-}
-      FIZZY_ACCOUNT_ID: ${FIZZY_ACCOUNT_ID:-}
-      FIZZY_BOARD_ID: ${FIZZY_BOARD_ID:-}
-      FIZZY_BOARD_SELECTION: ${FIZZY_BOARD_SELECTION:-configured}
-      FIZZY_URL: ${FIZZY_URL:-http://kryo-fizzy}
-      CAMPFIRE_BOT_KEY: ${CAMPFIRE_BOT_KEY:-}
-      CAMPFIRE_ROOM_ID: ${CAMPFIRE_ROOM_ID:-}
-      CAMPFIRE_ROOM_SELECTION: ${CAMPFIRE_ROOM_SELECTION:-configured}
-      CAMPFIRE_URL: ${CAMPFIRE_URL:-http://kryo-campfire}
-      CAMPFIRE_SESSION_COOKIE: ${CAMPFIRE_SESSION_COOKIE:-}
-      CAMPFIRE_TRANSCRIPT_LIMIT: ${CAMPFIRE_TRANSCRIPT_LIMIT:-100}
-      CAMPFIRE_RECENT_MESSAGES_LIMIT: ${CAMPFIRE_RECENT_MESSAGES_LIMIT:-20}
-      GIT_FORGE_PROVIDER: ${GIT_FORGE_PROVIDER:-gitea}
-      GIT_FORGE_API_URL: ${GIT_FORGE_API_URL:-http://kryo-gitea:3000/api/v1}
-      GIT_FORGE_TOKEN: ${GIT_FORGE_TOKEN:-}
-      GIT_FORGE_REPO: ${GIT_FORGE_REPO:-}
-      GIT_FORGE_ALLOW_REPO_OVERRIDE: ${GIT_FORGE_ALLOW_REPO_OVERRIDE:-false}
-      GIT_FORGE_DEFAULT_BRANCH: ${GIT_FORGE_DEFAULT_BRANCH:-main}
-      GIT_FORGE_MERGE_METHOD: ${GIT_FORGE_MERGE_METHOD:-squash}
-      GIT_FORGE_SUPPORTS_CHECK_RUNS: ${GIT_FORGE_SUPPORTS_CHECK_RUNS:-false}
-      WORKFLOW_TODO_COLUMN: ${WORKFLOW_TODO_COLUMN:-To Do}
-      WORKFLOW_IN_PROGRESS_COLUMN: ${WORKFLOW_IN_PROGRESS_COLUMN:-In Progress}
-      WORKFLOW_REVIEW_COLUMN: ${WORKFLOW_REVIEW_COLUMN:-Review}
-      WORKFLOW_BLOCKED_COLUMN: ${WORKFLOW_BLOCKED_COLUMN:-Blocked}
-      WORKFLOW_DONE_LABEL: ${WORKFLOW_DONE_LABEL:-Done}
-      WORKFLOW_NOT_NOW_LABEL: ${WORKFLOW_NOT_NOW_LABEL:-Not Now}
-      WORKFLOW_TRIAGE_LABEL: ${WORKFLOW_TRIAGE_LABEL:-Triage}
-      CARD_DESCRIPTION_PREVIEW_LIMIT: ${CARD_DESCRIPTION_PREVIEW_LIMIT:-500}
-      BOARD_STATUS_VISIBLE_CARDS_LIMIT: ${BOARD_STATUS_VISIBLE_CARDS_LIMIT:-5}
-      TROUBLESHOOT_ERROR_LIMIT: ${TROUBLESHOOT_ERROR_LIMIT:-1500}
-      MCP_HOST: 0.0.0.0
-      MCP_TRANSPORT: ${MCP_TRANSPORT:-streamable-http}
-      MCP_HTTP_SESSION_MODE: ${MCP_HTTP_SESSION_MODE:-stateful}
-      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-localhost,127.0.0.1,mcp}
-      MCP_SESSION_IDLE_TTL_MS: ${MCP_SESSION_IDLE_TTL_MS:-1800000}
-      MCP_MAX_SESSIONS: ${MCP_MAX_SESSIONS:-100}
-      MCP_PORT: ${MCP_PORT:-3100}
-      MCP_PATH: ${MCP_PATH:-/mcp}
-      BOT_WEBHOOK_PATH: ${BOT_WEBHOOK_PATH:-/campfire/webhook}
-      BOT_WEBHOOK_SHARED_SECRET: ${BOT_WEBHOOK_SHARED_SECRET:-}
-      BOT_WEBHOOK_SHARED_SECRET_HEADER: ${BOT_WEBHOOK_SHARED_SECRET_HEADER:-x-kryo-webhook-secret}
-      REQUEST_TIMEOUT_MS: ${REQUEST_TIMEOUT_MS:-10000}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
       - "3100:3100"
     healthcheck:
@@ -147,7 +109,7 @@ services:
         condition: service_started
 
   fizzy:
-    image: ghcr.io/basecamp/fizzy:main
+    image: ghcr.io/basecamp/fizzy@sha256:eaa3bd9986f0eab9623cb40f06f44992621516c97c0c7a4a947ecd5bf7856233
     restart: unless-stopped
     ports:
       - "3006:80"
@@ -169,8 +131,13 @@ services:
       start_period: 45s
 
   campfire:
+    image: kryo-campfire:${CAMPFIRE_IMAGE_TAG:-v1.4.3-msgpack}
     build:
-      context: ../once-campfire
+      context: ..
+      dockerfile: kryo/deploy/compose/campfire/Dockerfile
+      args:
+        APP_VERSION: ${ONCE_CAMPFIRE_VERSION:-v1.4.3}
+        GIT_REVISION: ${ONCE_CAMPFIRE_VERSION:-v1.4.3}
     restart: unless-stopped
     ports:
       - "3000:80"
@@ -191,12 +158,12 @@ services:
       start_period: 45s
 
   gitea:
-    image: gitea/gitea:1.24-rootless
+    image: gitea/gitea:1.25.5-rootless
     restart: unless-stopped
     ports:
       - "3007:3000"
     environment:
-      ROOT_URL: ${BOOTSTRAP_GITEA_ROOT_URL:-http://localhost:3007}
+      ROOT_URL: ${BOOTSTRAP_GITEA_ROOT_URL}
       DB_TYPE: sqlite3
       INSTALL_LOCK: "true"
       DISABLE_REGISTRATION: "true"

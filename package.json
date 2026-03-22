@@ -18,8 +18,9 @@
     "test:online": "pnpm run build && node --test build/tests/mcp-http.e2e.js",
     "lint": "biome check .",
     "format": "biome format --write .",
+    "format:check": "biome format .",
     "deadcode": "knip",
-    "quality": "pnpm run format && pnpm run lint && pnpm run deadcode"
+    "quality": "pnpm run format:check && pnpm run lint && pnpm run deadcode"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.11",

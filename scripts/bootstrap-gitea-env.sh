@@ -3,42 +3,27 @@ set -eu
 
 . "$(dirname "$0")/bootstrap-env-common.sh"
 
-BOOTSTRAP_GITEA_ROOT_URL=$(resolve_env_setting "BOOTSTRAP_GITEA_ROOT_URL" "http://localhost:3007")
-BOOTSTRAP_GITEA_ADMIN_NAME=$(resolve_env_setting "BOOTSTRAP_GITEA_ADMIN_NAME" "Gitea Admin")
-BOOTSTRAP_GITEA_ADMIN_USERNAME=$(resolve_env_setting "BOOTSTRAP_GITEA_ADMIN_USERNAME" "gitea-admin")
-BOOTSTRAP_GITEA_ADMIN_EMAIL=$(resolve_env_setting "BOOTSTRAP_GITEA_ADMIN_EMAIL" "gitea-admin@demo.local")
-BOOTSTRAP_GITEA_ADMIN_PASSWORD=$(resolve_env_setting "BOOTSTRAP_GITEA_ADMIN_PASSWORD" "gitea-admin")
-BOOTSTRAP_GITEA_SERVICE_NAME=$(resolve_env_setting "BOOTSTRAP_GITEA_SERVICE_NAME" "Kryo Service")
-BOOTSTRAP_GITEA_SERVICE_USERNAME=$(resolve_env_setting "BOOTSTRAP_GITEA_SERVICE_USERNAME" "kryo-service")
-BOOTSTRAP_GITEA_SERVICE_EMAIL=$(resolve_env_setting "BOOTSTRAP_GITEA_SERVICE_EMAIL" "kryo-service@demo.local")
-BOOTSTRAP_GITEA_SERVICE_PASSWORD=$(resolve_env_setting "BOOTSTRAP_GITEA_SERVICE_PASSWORD" "kryo-service")
-BOOTSTRAP_GITEA_REPO_NAME=$(resolve_env_setting "BOOTSTRAP_GITEA_REPO_NAME" "target-service")
-BOOTSTRAP_GITEA_TOKEN_NAME=$(resolve_env_setting "BOOTSTRAP_GITEA_TOKEN_NAME" "kryo-mcp")
-
 ensure_env_file
+
+BOOTSTRAP_GITEA_ROOT_URL=$(require_env_setting "BOOTSTRAP_GITEA_ROOT_URL")
+BOOTSTRAP_GITEA_ADMIN_NAME=$(require_env_setting "BOOTSTRAP_GITEA_ADMIN_NAME")
+BOOTSTRAP_GITEA_ADMIN_USERNAME=$(require_env_setting "BOOTSTRAP_GITEA_ADMIN_USERNAME")
+BOOTSTRAP_GITEA_ADMIN_EMAIL=$(require_env_setting "BOOTSTRAP_GITEA_ADMIN_EMAIL")
+BOOTSTRAP_GITEA_ADMIN_PASSWORD=$(require_env_setting "BOOTSTRAP_GITEA_ADMIN_PASSWORD")
+BOOTSTRAP_GITEA_SERVICE_NAME=$(require_env_setting "BOOTSTRAP_GITEA_SERVICE_NAME")
+BOOTSTRAP_GITEA_SERVICE_USERNAME=$(require_env_setting "BOOTSTRAP_GITEA_SERVICE_USERNAME")
+BOOTSTRAP_GITEA_SERVICE_EMAIL=$(require_env_setting "BOOTSTRAP_GITEA_SERVICE_EMAIL")
+BOOTSTRAP_GITEA_SERVICE_PASSWORD=$(require_env_setting "BOOTSTRAP_GITEA_SERVICE_PASSWORD")
+BOOTSTRAP_GITEA_REPO_NAME=$(require_env_setting "BOOTSTRAP_GITEA_REPO_NAME")
+BOOTSTRAP_GITEA_TOKEN_NAME=$(require_env_setting "BOOTSTRAP_GITEA_TOKEN_NAME")
 
 current_api_token=$(read_env_var "GIT_FORGE_TOKEN")
 
-wait_for_gitea() {
-  attempts=0
-  max_attempts=30
+run_gitea_bootstrap() {
+  existing_token="$1"
+  force_new_token="${2:-0}"
 
-  until docker compose --env-file "$ENV_FILE" exec -T gitea sh -c \
-    'curl -fsS http://127.0.0.1:3000/api/healthz >/dev/null'; do
-    attempts=$((attempts + 1))
-    if [ "$attempts" -ge "$max_attempts" ]; then
-      echo "Timed out waiting for Gitea to report healthy." >&2
-      exit 1
-    fi
-
-    sleep 2
-  done
-}
-
-wait_for_gitea
-
-bootstrap_output=$(
-  docker compose --env-file "$ENV_FILE" exec -T \
+  compose_cmd exec -T \
     -e BOOTSTRAP_GITEA_ADMIN_NAME="$BOOTSTRAP_GITEA_ADMIN_NAME" \
     -e BOOTSTRAP_GITEA_ADMIN_USERNAME="$BOOTSTRAP_GITEA_ADMIN_USERNAME" \
     -e BOOTSTRAP_GITEA_ADMIN_EMAIL="$BOOTSTRAP_GITEA_ADMIN_EMAIL" \
@@ -48,7 +33,8 @@ bootstrap_output=$(
     -e BOOTSTRAP_GITEA_SERVICE_EMAIL="$BOOTSTRAP_GITEA_SERVICE_EMAIL" \
     -e BOOTSTRAP_GITEA_SERVICE_PASSWORD="$BOOTSTRAP_GITEA_SERVICE_PASSWORD" \
     -e BOOTSTRAP_GITEA_TOKEN_NAME="$BOOTSTRAP_GITEA_TOKEN_NAME" \
-    -e GITEA_EXISTING_API_TOKEN="$current_api_token" \
+    -e GITEA_EXISTING_API_TOKEN="$existing_token" \
+    -e GITEA_FORCE_NEW_API_TOKEN="$force_new_token" \
     gitea sh -eu -c '
       has_user() {
         username="$1"
@@ -79,20 +65,7 @@ bootstrap_output=$(
           $admin_flag >/dev/null
       }
 
-      ensure_user \
-        "$BOOTSTRAP_GITEA_ADMIN_USERNAME" \
-        "$BOOTSTRAP_GITEA_ADMIN_PASSWORD" \
-        "$BOOTSTRAP_GITEA_ADMIN_EMAIL" \
-        "$BOOTSTRAP_GITEA_ADMIN_NAME" \
-        "--admin"
-
-      ensure_user \
-        "$BOOTSTRAP_GITEA_SERVICE_USERNAME" \
-        "$BOOTSTRAP_GITEA_SERVICE_PASSWORD" \
-        "$BOOTSTRAP_GITEA_SERVICE_EMAIL" \
-        "$BOOTSTRAP_GITEA_SERVICE_NAME"
-
-      if [ -z "$GITEA_EXISTING_API_TOKEN" ]; then
+      generate_token() {
         token_name="$BOOTSTRAP_GITEA_TOKEN_NAME"
         if ! token="$(gitea admin user generate-access-token \
           --username "$BOOTSTRAP_GITEA_SERVICE_USERNAME" \
@@ -108,9 +81,46 @@ bootstrap_output=$(
         fi
 
         printf "GIT_FORGE_TOKEN=%s\n" "$token"
+      }
+
+      ensure_user \
+        "$BOOTSTRAP_GITEA_ADMIN_USERNAME" \
+        "$BOOTSTRAP_GITEA_ADMIN_PASSWORD" \
+        "$BOOTSTRAP_GITEA_ADMIN_EMAIL" \
+        "$BOOTSTRAP_GITEA_ADMIN_NAME" \
+        "--admin"
+
+      ensure_user \
+        "$BOOTSTRAP_GITEA_SERVICE_USERNAME" \
+        "$BOOTSTRAP_GITEA_SERVICE_PASSWORD" \
+        "$BOOTSTRAP_GITEA_SERVICE_EMAIL" \
+        "$BOOTSTRAP_GITEA_SERVICE_NAME"
+
+      if [ "$GITEA_FORCE_NEW_API_TOKEN" = "1" ] || [ -z "$GITEA_EXISTING_API_TOKEN" ]; then
+        generate_token
       fi
     '
-)
+}
+
+wait_for_gitea() {
+  attempts=0
+  max_attempts=30
+
+  until compose_cmd exec -T gitea sh -c \
+    'curl -fsS http://127.0.0.1:3000/api/healthz >/dev/null'; do
+    attempts=$((attempts + 1))
+    if [ "$attempts" -ge "$max_attempts" ]; then
+      echo "Timed out waiting for Gitea to report healthy." >&2
+      exit 1
+    fi
+
+    sleep 2
+  done
+}
+
+wait_for_gitea
+
+bootstrap_output=$(run_gitea_bootstrap "${current_api_token:-}" 0)
 
 api_token=${current_api_token:-$(printf '%s\n' "$bootstrap_output" | sed -n 's/^GIT_FORGE_TOKEN=//p' | tail -n 1)}
 repo_owner="$BOOTSTRAP_GITEA_SERVICE_USERNAME"
@@ -123,7 +133,7 @@ if [ -z "$api_token" ]; then
 fi
 
 repo_status=$(
-  docker compose --env-file "$ENV_FILE" exec -T \
+  compose_cmd exec -T \
     -e GITEA_API_TOKEN="$api_token" \
     -e GITEA_REPO_FULL_NAME="$repo_full_name" \
     gitea sh -c \
@@ -132,11 +142,32 @@ repo_status=$(
       "http://127.0.0.1:3000/api/v1/repos/$GITEA_REPO_FULL_NAME"'
 )
 
+if [ "$repo_status" = "401" ]; then
+  bootstrap_output=$(run_gitea_bootstrap "" 1)
+  api_token=$(printf '%s\n' "$bootstrap_output" | sed -n 's/^GIT_FORGE_TOKEN=//p' | tail -n 1)
+
+  if [ -z "$api_token" ]; then
+    printf '%s\n' "$bootstrap_output"
+    echo "Failed to rotate Gitea service token after HTTP 401." >&2
+    exit 1
+  fi
+
+  repo_status=$(
+    compose_cmd exec -T \
+      -e GITEA_API_TOKEN="$api_token" \
+      -e GITEA_REPO_FULL_NAME="$repo_full_name" \
+      gitea sh -c \
+      'curl -sS -o /dev/null -w "%{http_code}" \
+        -H "Authorization: token $GITEA_API_TOKEN" \
+        "http://127.0.0.1:3000/api/v1/repos/$GITEA_REPO_FULL_NAME"'
+  )
+fi
+
 case "$repo_status" in
   200)
     ;;
   404)
-    docker compose --env-file "$ENV_FILE" exec -T \
+    compose_cmd exec -T \
       -e GITEA_API_TOKEN="$api_token" \
       -e GITEA_REPO_NAME="$BOOTSTRAP_GITEA_REPO_NAME" \
       gitea sh -c \
@@ -165,12 +196,9 @@ update_env_var "BOOTSTRAP_GITEA_SERVICE_PASSWORD" "$BOOTSTRAP_GITEA_SERVICE_PASS
 update_env_var "BOOTSTRAP_GITEA_REPO_NAME" "$BOOTSTRAP_GITEA_REPO_NAME"
 update_env_var "BOOTSTRAP_GITEA_TOKEN_NAME" "$BOOTSTRAP_GITEA_TOKEN_NAME"
 update_env_var "GIT_FORGE_PROVIDER" "gitea"
-update_env_var "GIT_FORGE_API_URL" "http://kryo-gitea:3000/api/v1"
 update_env_var "GIT_FORGE_TOKEN" "$api_token"
 update_env_var "GIT_FORGE_REPO" "$repo_full_name"
 update_env_var "GIT_FORGE_ALLOW_REPO_OVERRIDE" "false"
-update_env_var "GIT_FORGE_DEFAULT_BRANCH" "main"
-update_env_var "GIT_FORGE_SUPPORTS_CHECK_RUNS" "false"
 
 printf 'Updated %s\n' "$ENV_FILE"
 printf 'BOOTSTRAP_GITEA_ADMIN_USERNAME=%s\n' "$BOOTSTRAP_GITEA_ADMIN_USERNAME"

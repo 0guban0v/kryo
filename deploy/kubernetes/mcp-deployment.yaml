@@ -15,7 +15,7 @@ spec:
       serviceAccountName: mcp
       containers:
         - name: mcp
-          image: ghcr.io/your-org/kryo:latest
+          image: ghcr.io/your-org/kryo:v0.1.0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
