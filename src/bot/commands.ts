@@ -1,5 +1,6 @@
 import type { MissionControlServices } from "../runtime.js";
 import type { CampfireWebhookPayload } from "../types.js";
+import { handleCampfireAgentCommand } from "./agent.js";
 import {
   createCard,
   getBlockedWork,
@@ -69,6 +70,10 @@ export async function handleCampfireCommand(
   payload: CampfireWebhookPayload,
 ): Promise<string> {
   services.campfire.observeWebhook(payload);
+
+  if (services.config.bot.mode === "agent") {
+    return handleCampfireAgentCommand(services, payload);
+  }
 
   const command = payload.message.body.plain.trim();
 

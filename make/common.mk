@@ -1,8 +1,9 @@
 .PHONY: \
-	install build test-offline test-online lint format deadcode quality up down restart ps logs health devbox-up \
+	install build test-offline test-online lint format deadcode quality up down down-reset restart ps logs health devbox-up \
 	bootstrap bootstrap-fizzy bootstrap-campfire bootstrap-gitea generate-mcp-env refresh-mcp-runtime fizzy-login-code deploy deploy-all observability-up observability-down observability-ps \
-	observability-deploy-dashboard \
-	container-install container-build container-test-offline container-test-online container-lint container-format container-deadcode container-quality container-refresh-mcp-runtime
+	docker-prune-dangling-volumes docker-prune-dangling-images observability-deploy-dashboard \
+	container-install container-build container-test-offline container-test-online container-lint container-format container-deadcode container-quality container-refresh-mcp-runtime \
+	venv llm-install llm-serve llm-serve-bg llm-smoke llm-status llm-stop llm-logs
 
 ENV_FILE_PLACEHOLDER := yourname.env
 ENV_FILE ?= $(ENV_FILE_PLACEHOLDER)
@@ -16,3 +17,13 @@ DEVBOX_BOOTSTRAP := corepack enable >/dev/null && pnpm config set store-dir /pnp
 PNPM_INSTALL := pnpm install --frozen-lockfile
 SERVICE ?=
 EMAIL ?= $(shell [ -f "$(ENV_FILE)" ] && sed -n 's/^BOOTSTRAP_FIZZY_OWNER_EMAIL=//p' "$(ENV_FILE)" | tail -n 1)
+
+guard-env-file:
+	@if [ "$(ENV_FILE)" = "$(ENV_FILE_PLACEHOLDER)" ]; then \
+		echo "Set ENV_FILE, for example: cp .env.example yourname.env && make deploy ENV_FILE=yourname.env"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(ENV_FILE)" ]; then \
+		echo "Missing $(ENV_FILE). Create it from .env.example or pass a different ENV_FILE."; \
+		exit 1; \
+	fi

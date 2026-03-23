@@ -73,6 +73,11 @@ fizzy-login-code: guard-env-file
 		-e EMAIL='$(EMAIL)' \
 		fizzy bin/rails runner 'identity = Identity.find_by(email_address: ENV.fetch("EMAIL")) or abort("Unknown Fizzy identity: #{ENV.fetch("EMAIL")}") ; magic_link = identity.send_magic_link ; puts "EMAIL=#{identity.email_address}" ; puts "MAGIC_LINK_CODE=#{magic_link.code}"'
 
+# Refresh Fizzy credentials and then recreate mcp so a stale token in the env
+# file does not leave Kryo failing with 401s after clean redeploys or resets.
+repair-fizzy-auth: bootstrap-fizzy generate-mcp-env
+	$(COMPOSE) up -d --force-recreate mcp
+
 deploy: bootstrap generate-mcp-env
 	$(COMPOSE) up -d mcp
 
@@ -83,7 +88,21 @@ up: guard-env-file generate-mcp-env
 	$(COMPOSE) up --build
 
 down: guard-env-file
-	$(COMPOSE) down
+	$(COMPOSE) $(DEVBOX_PROFILE) --profile observability down
+
+# Explicit destructive reset for the full local stack. This removes Compose
+# volumes and clears host-side vllm-mlx runtime artifacts after stopping the
+# host model process if it is running.
+down-reset: guard-env-file
+	-$(MAKE) llm-stop
+	$(COMPOSE) $(DEVBOX_PROFILE) --profile observability down -v
+	rm -f var/llm/vllm-mlx.pid var/llm/vllm-mlx.log
+
+docker-prune-dangling-volumes:
+	docker volume prune -f
+
+docker-prune-dangling-images:
+	docker image prune -f
 
 restart: guard-env-file
 	$(if $(strip $(SERVICE)),$(COMPOSE) restart $(SERVICE),$(COMPOSE) restart)

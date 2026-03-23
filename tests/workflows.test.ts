@@ -16,6 +16,7 @@ import {
   pickUpWork,
   troubleshoot,
 } from "../src/workflows/index.js";
+import { updateProgress } from "../src/workflows/update-progress.js";
 
 const now = "2026-03-20T00:00:00.000Z";
 
@@ -294,6 +295,33 @@ test("createCard applies tags, moves the card, and notifies Campfire", async () 
   assert.equal(notifications.length, 1);
   assert.match(result.markdown, /Placed in In Progress\./);
   assert.match(result.markdown, /Tags: bug, p1/);
+});
+
+test('updateProgress maps "In Progress" to the active Fizzy state when no column exists', async () => {
+  const triagedCard = makeCard({
+    column: undefined,
+    postponed: false,
+    closed: false,
+  });
+
+  const services = createMockServices({
+    fizzy: {
+      getCard: async () => makeCard(),
+      findColumnByName: async () => undefined,
+      sendCardBackToTriage: async () => triagedCard,
+    },
+  });
+
+  services.config.workflow.triageLabel = "Maybe";
+  services.config.workflow.inProgressColumnName = "Maybe";
+
+  const result = await updateProgress(services, {
+    cardId: 1,
+    targetColumn: "In Progress",
+  });
+
+  assert.equal(result.summary, "Moved #1 Implement health endpoint to Maybe.");
+  assert.match(result.markdown, /Column: Maybe/);
 });
 
 test("troubleshoot writes a targeted health-endpoint comment and notifies Campfire", async () => {

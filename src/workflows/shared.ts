@@ -22,6 +22,7 @@ export function cardLabel(card: Pick<FizzyCard, "number" | "title">): string {
 
 function normalizedWorkflowLabels(services: MissionControlServices): {
   done: string[];
+  inProgress: string[];
   notNow: string[];
   triage: string[];
 } {
@@ -31,10 +32,17 @@ function normalizedWorkflowLabels(services: MissionControlServices): {
     done: [workflow.doneLabel, "done", "closed"].map((value) =>
       normalizeName(value),
     ),
+    inProgress: [
+      workflow.inProgressColumnName,
+      "in progress",
+      "active",
+      "started",
+      "working",
+    ].map((value) => normalizeName(value)),
     notNow: [workflow.notNowLabel, "not now", "postponed"].map((value) =>
       normalizeName(value),
     ),
-    triage: [workflow.triageLabel, "triage", "to do"].map((value) =>
+    triage: [workflow.triageLabel, "triage", "to do", "maybe"].map((value) =>
       normalizeName(value),
     ),
   };
@@ -115,7 +123,10 @@ async function resolveTarget(
     return { kind: "not_now", label: services.config.workflow.notNowLabel };
   }
 
-  if (labels.triage.includes(normalizedTarget)) {
+  if (
+    labels.triage.includes(normalizedTarget) ||
+    labels.inProgress.includes(normalizedTarget)
+  ) {
     return { kind: "triage", label: services.config.workflow.triageLabel };
   }
 

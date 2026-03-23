@@ -27,6 +27,26 @@ The Makefile intentionally defaults `ENV_FILE` to a placeholder so Compose-backe
 
 `make deploy-all` runs the idempotent bootstrap flow, starts the core developer workflow services, and brings up the local observability profile. Installation details, seeded demo identities, login helpers, and the broader Make target reference live in the docs.
 
+For host-run inference on Apple Silicon, keep `vllm-mlx` in the repo-local `.venv` and use the top-level targets:
+
+```sh
+make llm-install
+make llm-serve
+```
+
+`make llm-install` uses the minimal [pyproject.toml](/Users/0gubanov/github/kryo/pyproject.toml) and `uv sync`. The local OpenAI-compatible endpoint is expected at `http://127.0.0.1:8000` by default.
+For background operation and server observability, use:
+
+```sh
+make llm-serve-bg
+make llm-status
+make llm-logs
+make llm-stop
+```
+
+That keeps the host model PID and appended log together under `var/llm/`.
+If you want to enable `vllm-mlx` API auth, set `LLM_API_KEY=...` for both the host model targets and Kryo.
+
 | Service | Purpose | URL |
 | --- | --- | --- |
 | MCP HTTP | MCP endpoint | [http://localhost:3100/mcp](http://localhost:3100/mcp) |

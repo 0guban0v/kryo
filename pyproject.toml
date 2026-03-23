@@ -1,0 +1,11 @@
+[project]
+name = "kryo-mlx"
+version = "0.1.0"
+description = "Local host-side model runtime for Kryo."
+requires-python = ">=3.11"
+dependencies = [
+  "vllm-mlx",
+]
+
+[tool.uv]
+package = false

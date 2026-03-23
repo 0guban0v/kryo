@@ -1,7 +1,10 @@
 node_modules
 build
 .pnpm-store
+.venv
 *.env
 !.env.example
 .grafana
 .DS_Store
+var
+!var/llm/.gitkeep

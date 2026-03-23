@@ -10,6 +10,7 @@ BOOTSTRAP_CAMPFIRE_ADMIN_EMAIL=$(require_env_setting "BOOTSTRAP_CAMPFIRE_ADMIN_E
 BOOTSTRAP_CAMPFIRE_ADMIN_PASSWORD=$(require_env_setting "BOOTSTRAP_CAMPFIRE_ADMIN_PASSWORD")
 BOOTSTRAP_CAMPFIRE_ROOM_NAME=$(require_env_setting "BOOTSTRAP_CAMPFIRE_ROOM_NAME")
 BOOTSTRAP_CAMPFIRE_BOT_NAME=$(require_env_setting "BOOTSTRAP_CAMPFIRE_BOT_NAME")
+BOOTSTRAP_CAMPFIRE_WEBHOOK_URL=$(read_env_var "BOOTSTRAP_CAMPFIRE_WEBHOOK_URL")
 
 bootstrap_output=$(
   compose_cmd exec -T \
@@ -18,12 +19,14 @@ bootstrap_output=$(
     -e BOOTSTRAP_CAMPFIRE_ADMIN_PASSWORD="$BOOTSTRAP_CAMPFIRE_ADMIN_PASSWORD" \
     -e BOOTSTRAP_CAMPFIRE_ROOM_NAME="$BOOTSTRAP_CAMPFIRE_ROOM_NAME" \
     -e BOOTSTRAP_CAMPFIRE_BOT_NAME="$BOOTSTRAP_CAMPFIRE_BOT_NAME" \
+    -e BOOTSTRAP_CAMPFIRE_WEBHOOK_URL="$BOOTSTRAP_CAMPFIRE_WEBHOOK_URL" \
     campfire bin/rails runner - <<'RUBY'
 admin_email = ENV.fetch("BOOTSTRAP_CAMPFIRE_ADMIN_EMAIL")
 admin_name = ENV.fetch("BOOTSTRAP_CAMPFIRE_ADMIN_NAME")
 admin_password = ENV.fetch("BOOTSTRAP_CAMPFIRE_ADMIN_PASSWORD")
 room_name = ENV.fetch("BOOTSTRAP_CAMPFIRE_ROOM_NAME")
 bot_name = ENV.fetch("BOOTSTRAP_CAMPFIRE_BOT_NAME")
+webhook_url = ENV["BOOTSTRAP_CAMPFIRE_WEBHOOK_URL"].presence
 
 admin = User.find_by(email_address: admin_email)
 if admin.nil?
@@ -60,10 +63,12 @@ room = Room.opens.find_by(name: room_name)
 room ||= Rooms::Open.create_for({ name: room_name }, users: admin)
 
 bot = User.active_bots.find_by(name: bot_name)
-bot ||= User.create_bot!(name: bot_name)
+bot ||= User.create_bot!(name: bot_name, webhook_url: webhook_url)
+bot.update_bot!(webhook_url: webhook_url)
 
 puts "CAMPFIRE_ROOM_ID=#{room.id}"
 puts "CAMPFIRE_BOT_KEY=#{bot.bot_key}"
+puts "BOOTSTRAP_CAMPFIRE_WEBHOOK_URL=#{bot.webhook_url}" if bot.webhook_url.present?
 RUBY
 )
 
@@ -83,6 +88,9 @@ update_env_var "BOOTSTRAP_CAMPFIRE_ADMIN_EMAIL" "$BOOTSTRAP_CAMPFIRE_ADMIN_EMAIL
 update_env_var "BOOTSTRAP_CAMPFIRE_ADMIN_PASSWORD" "$BOOTSTRAP_CAMPFIRE_ADMIN_PASSWORD"
 update_env_var "BOOTSTRAP_CAMPFIRE_ROOM_NAME" "$BOOTSTRAP_CAMPFIRE_ROOM_NAME"
 update_env_var "BOOTSTRAP_CAMPFIRE_BOT_NAME" "$BOOTSTRAP_CAMPFIRE_BOT_NAME"
+if [ -n "$BOOTSTRAP_CAMPFIRE_WEBHOOK_URL" ]; then
+  update_env_var "BOOTSTRAP_CAMPFIRE_WEBHOOK_URL" "$BOOTSTRAP_CAMPFIRE_WEBHOOK_URL"
+fi
 
 printf 'Updated %s\n' "$ENV_FILE"
 printf 'BOOTSTRAP_CAMPFIRE_ADMIN_EMAIL=%s\n' "$BOOTSTRAP_CAMPFIRE_ADMIN_EMAIL"

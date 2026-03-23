@@ -32,6 +32,29 @@ const optionalBoolean = z.preprocess((value) => {
   return value;
 }, z.boolean().optional());
 
+const booleanWithDefault = (fallback: boolean) =>
+  z.preprocess((value) => {
+    if (value === undefined || value === "") {
+      return fallback;
+    }
+
+    if (typeof value === "boolean") {
+      return value;
+    }
+
+    if (typeof value === "string") {
+      if (value === "true") {
+        return true;
+      }
+
+      if (value === "false") {
+        return false;
+      }
+    }
+
+    return value;
+  }, z.boolean());
+
 const optionalNonEmptyString = z.preprocess((value) => {
   if (value === undefined || value === "") {
     return undefined;
@@ -142,6 +165,19 @@ const envSchema = z.object({
     .string()
     .min(1)
     .default("x-kryo-webhook-secret"),
+  BOT_MODE: z.enum(["rules", "agent"]).default("rules"),
+  BOT_MAX_AGENT_STEPS: z.coerce.number().int().positive().default(12),
+  LLM_BASE_URL: optionalNonEmptyString,
+  LLM_MODEL: optionalNonEmptyString,
+  LLM_API_KEY: optionalNonEmptyString,
+  LLM_LOG_IO: booleanWithDefault(false),
+  LLM_CHAT_COMPLETIONS_PATH: z
+    .string()
+    .min(1)
+    .default("/v1/chat/completions"),
+  LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
+  BOT_REPO_PATH: optionalNonEmptyString,
+  BOT_REPO_REMOTE: z.string().min(1).default("origin"),
   REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });
@@ -201,11 +237,25 @@ export interface AppConfig {
   };
   bot: {
     webhookPath: string;
+    mode: "rules" | "agent";
+    maxAgentSteps: number;
     auth: {
       mode: "shared-secret" | "none";
       sharedSecret?: string;
       headerName: string;
     };
+  };
+  llm: {
+    baseUrl?: string;
+    model?: string;
+    apiKey?: string;
+    logIo: boolean;
+    chatCompletionsPath: string;
+    timeoutMs: number;
+  };
+  repo: {
+    rootPath?: string;
+    remoteName: string;
   };
   requestTimeoutMs: number;
   logLevel: "debug" | "info" | "warn" | "error";
@@ -273,6 +323,12 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     );
   }
 
+  if (env.BOT_MODE === "agent" && (!env.LLM_BASE_URL || !env.LLM_MODEL)) {
+    throw new Error(
+      "LLM_BASE_URL and LLM_MODEL are required when BOT_MODE=agent.",
+    );
+  }
+
   return {
     fizzy: {
       baseUrl: trimTrailingSlash(env.FIZZY_URL),
@@ -334,6 +390,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     bot: {
       webhookPath: env.BOT_WEBHOOK_PATH,
+      mode: env.BOT_MODE,
+      maxAgentSteps: env.BOT_MAX_AGENT_STEPS,
       auth: {
         mode: env.BOT_WEBHOOK_AUTH,
         headerName: env.BOT_WEBHOOK_SHARED_SECRET_HEADER,
@@ -341,6 +399,20 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
           ? { sharedSecret: env.BOT_WEBHOOK_SHARED_SECRET }
           : {}),
       },
+    },
+    llm: {
+      ...(env.LLM_BASE_URL
+        ? { baseUrl: trimTrailingSlash(env.LLM_BASE_URL) }
+        : {}),
+      ...(env.LLM_MODEL ? { model: env.LLM_MODEL } : {}),
+      ...(env.LLM_API_KEY ? { apiKey: env.LLM_API_KEY } : {}),
+      logIo: env.LLM_LOG_IO,
+      chatCompletionsPath: env.LLM_CHAT_COMPLETIONS_PATH,
+      timeoutMs: env.LLM_TIMEOUT_MS,
+    },
+    repo: {
+      ...(env.BOT_REPO_PATH ? { rootPath: env.BOT_REPO_PATH } : {}),
+      remoteName: env.BOT_REPO_REMOTE,
     },
     requestTimeoutMs: env.REQUEST_TIMEOUT_MS,
     logLevel: env.LOG_LEVEL,

@@ -21,7 +21,7 @@ The goal is reliability, not breadth.
 
 Use a single task with an obvious outcome:
 
-- board card moves from `To Do` to `In Progress`
+- board card moves from `To Do` to `Maybe`
 - code changes are small and easy to explain
 - tests pass
 - a PR appears in the git forge
@@ -53,10 +53,10 @@ Acceptance criteria:
 - the relevant service tests pass
 ```
 
-Recommended board columns:
+Recommended board states:
 
 - `To Do`
-- `In Progress`
+- `Maybe`
 - `Review`
 - `Done`
 - `Blocked`
@@ -142,7 +142,7 @@ Pick up the next task from the board using kryo.
 
 Expected outcome:
 
-- card moves to `In Progress`
+- card moves to `Maybe`
 - optional Campfire status message appears
 
 ### 3. Create a branch and implement the fix

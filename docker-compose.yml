@@ -16,8 +16,10 @@ services:
     image: kryo-mcp:${KRYO_IMAGE_TAG:-local}
     build:
       context: .
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
-      - ${MCP_RUNTIME_ENV:-deploy/mcp.env}
+      - ${ENV_FILE}
     restart: unless-stopped
     depends_on:
       fizzy:
@@ -28,6 +30,8 @@ services:
         condition: service_healthy
     ports:
       - "3100:3100"
+    volumes:
+      - ${BOT_REPO_HOST_PATH:-.}:${BOT_REPO_MOUNT_PATH:-/workspace}
     healthcheck:
       test:
         [
