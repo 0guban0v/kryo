@@ -64,8 +64,8 @@ llm-stop:
 llm-logs:
 	$(LLM_SCRIPT_ENV) $(LLM_SCRIPT) logs
 
-llm-demo: guard-env-file demo-reset
-	$(VENV_PYTHON) scripts/demo-agent.py
+llm-demo: guard-env-file llm-install demo-reset
+	ENV_FILE=$(ENV_FILE) LLM_API_KEY='$(LLM_API_KEY)' $(VENV_PYTHON) scripts/demo-agent.py
 
 # Reset demo state: unassign card #1, move it back to To Do, close any open PRs.
 # Reads FIZZY_API_TOKEN, FIZZY_ACCOUNT_ID, FIZZY_BOARD_ID, GIT_FORGE_TOKEN,

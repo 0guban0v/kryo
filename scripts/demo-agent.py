@@ -12,6 +12,7 @@ Requires:
 """
 
 import json
+import os
 import re
 import sys
 import uuid
@@ -24,6 +25,26 @@ THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 VLLM_BASE_URL = "http://localhost:8000"
 KRYO_MCP_URL = "http://localhost:3100/mcp"
 MODEL = "default"
+def _resolve_llm_api_key() -> str:
+    key = os.environ.get("LLM_API_KEY", "")
+    if key:
+        return key
+    env_file = os.environ.get("ENV_FILE", "")
+    if env_file and os.path.isfile(env_file):
+        with open(env_file) as f:
+            for line in f:
+                if line.startswith("LLM_API_KEY="):
+                    return line[len("LLM_API_KEY="):].strip()
+    return ""
+
+
+LLM_API_KEY = _resolve_llm_api_key()
+
+
+def _llm_headers() -> dict:
+    if LLM_API_KEY:
+        return {"Authorization": f"Bearer {LLM_API_KEY}"}
+    return {}
 MAX_TURNS = 20
 
 SUMMARY_PROMPT = """Card: {card_title}
@@ -112,7 +133,7 @@ def mcp_tool_to_anthropic(tool: dict) -> dict:
 
 def run_agent():
     print(f"[llm] connecting to {VLLM_BASE_URL}")
-    health = requests.get(f"{VLLM_BASE_URL}/health").json()
+    health = requests.get(f"{VLLM_BASE_URL}/health", headers=_llm_headers()).json()
     print(f"[llm] model: {health['model_name']}")
 
     mcp = KryoMCPClient(KRYO_MCP_URL)
@@ -174,6 +195,7 @@ def run_agent():
                 {"role": "user", "content": SUMMARY_PROMPT.format(card_title=card_title, pr_number=pr_number)},
             ],
         },
+        headers=_llm_headers(),
         timeout=60,
     )
     resp.raise_for_status()

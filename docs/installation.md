@@ -104,8 +104,8 @@ Compose-backed targets require `ENV_FILE=...`.
 - `make ps ENV_FILE=yourname.env`
 - `make logs ENV_FILE=yourname.env SERVICE=mcp`
 - `make fizzy-login-code ENV_FILE=yourname.env`
-- `make docker-prune-dangling-volumes`
-- `make docker-prune-dangling-images`
+- `make docker-prune-dangling-volumes` — removes **all** globally dangling Docker volumes, not just Kryo
+- `make docker-prune-dangling-images` — removes **all** globally dangling Docker images, not just Kryo
 
 ### Quality
 
