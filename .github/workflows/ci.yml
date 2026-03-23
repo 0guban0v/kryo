@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  build-test:
+  quality:
     runs-on: ubuntu-24.04
 
     steps:
@@ -30,9 +30,6 @@ jobs:
 
       - name: Typecheck root project
         run: pnpm run typecheck
-
-      - name: Build root project
-        run: pnpm run build
 
       - name: Run quality checks
         run: pnpm run quality

@@ -1,5 +1,5 @@
-import { promises as fs } from "node:fs";
 import { spawn } from "node:child_process";
+import { promises as fs } from "node:fs";
 import path from "node:path";
 
 import type { Logger } from "../logger.js";
@@ -17,10 +17,7 @@ function hasShellControlOperators(command: string): boolean {
 }
 
 function tokenizeCommand(command: string): string[] {
-  return command
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  return command.trim().split(/\s+/).filter(Boolean);
 }
 
 function sanitizeBranchName(value: string): string {
@@ -85,11 +82,7 @@ export class LocalRepoClient {
       );
     }
 
-    await fs.writeFile(
-      absolutePath,
-      current.replace(oldText, newText),
-      "utf8",
-    );
+    await fs.writeFile(absolutePath, current.replace(oldText, newText), "utf8");
   }
 
   async gitStatus(): Promise<string> {
@@ -101,7 +94,9 @@ export class LocalRepoClient {
   }
 
   async currentBranch(): Promise<string> {
-    return (await this.run(["git", "rev-parse", "--abbrev-ref", "HEAD"])).trim();
+    return (
+      await this.run(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+    ).trim();
   }
 
   async createBranch(branchName: string): Promise<string> {
@@ -241,7 +236,9 @@ export class LocalRepoClient {
       });
       child.on("error", reject);
       child.on("close", (code) => {
-        const output = trimOutput([stdout.trim(), stderr.trim()].filter(Boolean).join("\n"));
+        const output = trimOutput(
+          [stdout.trim(), stderr.trim()].filter(Boolean).join("\n"),
+        );
 
         if (code === 0) {
           resolve(output || "ok");

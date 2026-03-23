@@ -1,7 +1,14 @@
 {
   "files": {
     "ignoreUnknown": true,
-    "ignore": [".claude", ".pnpm-store", "build", "node_modules"]
+    "ignore": [
+      ".claude",
+      ".pnpm-store",
+      ".venv",
+      "build",
+      "node_modules",
+      "var"
+    ]
   },
   "formatter": {
     "enabled": true,

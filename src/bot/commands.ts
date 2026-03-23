@@ -1,12 +1,12 @@
 import type { MissionControlServices } from "../runtime.js";
 import type { CampfireWebhookPayload } from "../types.js";
-import { handleCampfireAgentCommand } from "./agent.js";
 import {
   createCard,
   getBlockedWork,
   getBoardStatus,
   pickUpWork,
 } from "../workflows/index.js";
+import { handleCampfireAgentCommand } from "./agent.js";
 
 function toPlainText(markdown: string): string {
   return markdown

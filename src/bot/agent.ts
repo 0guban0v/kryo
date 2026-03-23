@@ -1,14 +1,14 @@
+import type { ChatMessage } from "../inference/model-client.js";
+import type { MissionControlServices } from "../runtime.js";
 import type { CampfireWebhookPayload } from "../types.js";
-import { createCard } from "../workflows/create-card.js";
-import { completeWork } from "../workflows/complete-work.js";
 import { getBlockedWork, getBoardStatus } from "../workflows/board-status.js";
+import { completeWork } from "../workflows/complete-work.js";
+import { createCard } from "../workflows/create-card.js";
 import { pickUpWork } from "../workflows/pick-up-work.js";
+import { cardLabel } from "../workflows/shared.js";
 import { submitForReview } from "../workflows/submit-for-review.js";
 import { updateProgress } from "../workflows/update-progress.js";
-import type { ChatMessage } from "../inference/model-client.js";
 import { KRYO_BOT_SYSTEM_PROMPT } from "./system-prompt.js";
-import type { MissionControlServices } from "../runtime.js";
-import { cardLabel } from "../workflows/shared.js";
 
 interface AgentDecision {
   type: "reply" | "action";
@@ -202,11 +202,17 @@ async function executeAction(
 
   switch (decision.action) {
     case "board_status": {
-      const result = await getBoardStatus(services, asOptionalString(args.boardId));
+      const result = await getBoardStatus(
+        services,
+        asOptionalString(args.boardId),
+      );
       return toPlainText(result.markdown);
     }
     case "blocked_work": {
-      const result = await getBlockedWork(services, asOptionalString(args.boardId));
+      const result = await getBlockedWork(
+        services,
+        asOptionalString(args.boardId),
+      );
       return toPlainText(result.markdown);
     }
     case "get_card": {
@@ -282,7 +288,9 @@ async function executeAction(
     }
     case "merge_pr": {
       if (!hasExplicitMergeApproval(payload.message.body.plain)) {
-        throw new Error("Merge requires explicit approval in the current message.");
+        throw new Error(
+          "Merge requires explicit approval in the current message.",
+        );
       }
 
       const result = await completeWork(
@@ -301,7 +309,9 @@ async function executeAction(
         throw new Error("Local repo access is not configured.");
       }
 
-      return JSON.stringify(await services.repo.listFiles(asOptionalString(args.path)));
+      return JSON.stringify(
+        await services.repo.listFiles(asOptionalString(args.path)),
+      );
     }
     case "repo_read_file": {
       if (!services.repo) {

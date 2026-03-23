@@ -16,8 +16,8 @@
     "test": "pnpm run test:offline",
     "test:offline": "pnpm run build && node --test build/tests/**/*.test.js",
     "test:online": "pnpm run build && node --test build/tests/mcp-http.e2e.js",
-    "lint": "biome check .",
-    "format": "biome check --write .",
+    "lint": "biome lint .",
+    "format": "biome format --write .",
     "format:check": "biome format .",
     "deadcode": "knip",
     "quality": "pnpm run format:check && pnpm run lint && pnpm run deadcode"

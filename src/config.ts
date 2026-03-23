@@ -171,10 +171,7 @@ const envSchema = z.object({
   LLM_MODEL: optionalNonEmptyString,
   LLM_API_KEY: optionalNonEmptyString,
   LLM_LOG_IO: booleanWithDefault(false),
-  LLM_CHAT_COMPLETIONS_PATH: z
-    .string()
-    .min(1)
-    .default("/v1/chat/completions"),
+  LLM_CHAT_COMPLETIONS_PATH: z.string().min(1).default("/v1/chat/completions"),
   LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   BOT_REPO_PATH: optionalNonEmptyString,
   BOT_REPO_REMOTE: z.string().min(1).default("origin"),

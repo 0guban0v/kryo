@@ -1,10 +1,10 @@
-import type { ChatModelClient } from "./inference/model-client.js";
-import { OpenAICompatibleChatClient } from "./inference/openai-chat-client.js";
-import { LocalRepoClient } from "./local-repo/client.js";
 import { CampfireClient } from "./adapters/campfire.js";
 import { FizzyClient } from "./adapters/fizzy.js";
 import { GitForgeClient } from "./adapters/github.js";
 import type { AppConfig } from "./config.js";
+import type { ChatModelClient } from "./inference/model-client.js";
+import { OpenAICompatibleChatClient } from "./inference/openai-chat-client.js";
+import { LocalRepoClient } from "./local-repo/client.js";
 import { Logger } from "./logger.js";
 
 export interface MissionControlServices {
