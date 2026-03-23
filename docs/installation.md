@@ -87,35 +87,56 @@ make bootstrap \
 
 ## Useful Make Targets
 
-All of the targets below are Compose-backed and require `ENV_FILE=...`.
+Compose-backed targets require `ENV_FILE=...`.
 
-- `make bootstrap ENV_FILE=yourname.env`
+### Stack
+
+- `make deploy ENV_FILE=yourname.env` — bootstrap + start `mcp`
+- `make deploy-all ENV_FILE=yourname.env` — deploy + start observability profile
+- `make bootstrap ENV_FILE=yourname.env` — seed services and write credentials to env file
 - `make bootstrap-fizzy ENV_FILE=yourname.env`
 - `make bootstrap-gitea ENV_FILE=yourname.env`
-- `make deploy ENV_FILE=yourname.env`
-- `make deploy-all ENV_FILE=yourname.env`
-- `make up ENV_FILE=yourname.env`
+- `make repair-fizzy-auth ENV_FILE=yourname.env` — re-bootstrap Fizzy auth and restart `mcp` (use when token expires)
+- `make up ENV_FILE=yourname.env` — start all services with build
 - `make down ENV_FILE=yourname.env`
-- `make down-reset ENV_FILE=yourname.env`
-- `make docker-prune-dangling-volumes`
-- `make docker-prune-dangling-images`
+- `make down-reset ENV_FILE=yourname.env` — destructive: removes Compose volumes
+- `make restart ENV_FILE=yourname.env SERVICE=mcp`
 - `make ps ENV_FILE=yourname.env`
 - `make logs ENV_FILE=yourname.env SERVICE=mcp`
+- `make fizzy-login-code ENV_FILE=yourname.env`
+- `make docker-prune-dangling-volumes`
+- `make docker-prune-dangling-images`
+
+### Quality
+
+All run inside the devbox container and require `ENV_FILE=...`.
+
 - `make test-offline ENV_FILE=yourname.env`
-- `make test-online ENV_FILE=yourname.env`
+- `make test-online ENV_FILE=yourname.env` — MCP HTTP e2e against `http://mcp:3100/mcp`
 - `make lint ENV_FILE=yourname.env`
 - `make format ENV_FILE=yourname.env`
-- `make deadcode ENV_FILE=yourname.env`
-- `make quality ENV_FILE=yourname.env`
+- `make deadcode ENV_FILE=yourname.env` — runs `knip`
+- `make quality ENV_FILE=yourname.env` — `format:check` + `lint` + `deadcode`
 
-`make test-online ENV_FILE=...` runs the standalone MCP HTTP end-to-end suite against a live server.
-It uses `MCP_E2E_URL`, which defaults to `http://127.0.0.1:3100/mcp`.
-When run through `make test-online`, the devbox container targets the Compose service URL `http://mcp:3100/mcp`.
-`make deadcode ENV_FILE=...` runs `knip`.
-`make quality ENV_FILE=...` runs `format:check`, `lint`, and `deadcode` in one step.
-`make down-reset ENV_FILE=...` is the destructive reset path: it removes the local Compose volumes.
-`make docker-prune-dangling-volumes` removes globally dangling Docker volumes, not just Kryo volumes.
-`make docker-prune-dangling-images` removes globally dangling Docker images, not just Kryo images.
+### Local LLM (Apple Silicon)
+
+Requires [uv](https://github.com/astral-sh/uv). Uses vllm-mlx to serve a local model and run the demo agent.
+
+- `make llm-install` — create `.venv` and install vllm-mlx
+- `make llm-serve` — start vllm-mlx in the foreground (default model: `mlx-community/Qwen3-1.7B-4bit`)
+- `make llm-serve-bg` — start in background, PID written to `var/llm/vllm-mlx.pid`
+- `make llm-status` — check if the server is running
+- `make llm-stop` — stop the background server
+- `make llm-logs` — tail `var/llm/vllm-mlx.log`
+- `make llm-smoke` — quick `/v1/models` probe
+- `make llm-demo ENV_FILE=yourname.env` — reset demo state and run the end-to-end agent loop
+- `make demo-reset ENV_FILE=yourname.env` — close open PRs, unassign card #1, move it back to To Do
+
+Override the model:
+
+```sh
+make llm-serve VLLM_MLX_MODEL=mlx-community/Qwen3-4B-4bit
+```
 
 ## Access Points
 
