@@ -56,14 +56,21 @@ export async function completeWork(
     card,
     services.config.workflow.doneLabel,
   );
-  const summary = `Merged PR #${input.prNumber} and completed ${cardLabel(card)}.`;
+  const summary = moved.moved
+    ? `Merged PR #${input.prNumber} and completed ${cardLabel(card)}.`
+    : `⚠ Partial success: PR #${input.prNumber} was merged, but ${cardLabel(card)} could not be moved to ${services.config.workflow.doneLabel}.`;
 
   return {
     summary,
     markdown: joinSections([
       heading("Work Completed", 2),
       `Merge response: ${merge.message}`,
-      moved.note,
+      bullet([
+        "PR merged successfully.",
+        moved.moved
+          ? `Card moved to ${moved.destinationLabel}.`
+          : `⚠ Card move failed.${moved.note ? ` ${moved.note}` : ""}`,
+      ]),
       cardDetailsMarkdown(services, moved.card),
     ]),
   };

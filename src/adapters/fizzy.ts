@@ -145,7 +145,7 @@ export class FizzyClient {
   }
 
   async getCard(reference: CardReference): Promise<FizzyCard> {
-    return this.resolveCard(reference);
+    return this.resolveCardRef(reference);
   }
 
   async getCardByNumber(cardNumber: number): Promise<FizzyCard> {
@@ -179,7 +179,7 @@ export class FizzyClient {
     reference: CardReference,
     input: UpdateFizzyCardInput,
   ): Promise<FizzyCard> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     return requestJson<FizzyCard>(
       this.options.baseUrl,
@@ -197,7 +197,7 @@ export class FizzyClient {
     reference: CardReference,
     columnId: string,
   ): Promise<FizzyCard> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     await requestRaw(
       this.options.baseUrl,
@@ -214,7 +214,7 @@ export class FizzyClient {
   }
 
   async sendCardBackToTriage(reference: CardReference): Promise<FizzyCard> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     await requestRaw(
       this.options.baseUrl,
@@ -230,7 +230,7 @@ export class FizzyClient {
   }
 
   async moveCardToNotNow(reference: CardReference): Promise<FizzyCard> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     await requestRaw(
       this.options.baseUrl,
@@ -246,7 +246,7 @@ export class FizzyClient {
   }
 
   async closeCard(reference: CardReference): Promise<FizzyCard> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     await requestRaw(
       this.options.baseUrl,
@@ -262,7 +262,7 @@ export class FizzyClient {
   }
 
   async reopenCard(reference: CardReference): Promise<FizzyCard> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     await requestRaw(
       this.options.baseUrl,
@@ -281,7 +281,7 @@ export class FizzyClient {
     reference: CardReference,
     assigneeId: string,
   ): Promise<void> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     await requestRaw(
       this.options.baseUrl,
@@ -299,7 +299,7 @@ export class FizzyClient {
     reference: CardReference,
     assigneeId: string,
   ): Promise<FizzyCard> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     if (!card.assignees.some((assignee) => assignee.id === assigneeId)) {
       await this.toggleAssignment(card, assigneeId);
@@ -309,7 +309,7 @@ export class FizzyClient {
   }
 
   async toggleTag(reference: CardReference, tagTitle: string): Promise<void> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     await requestRaw(
       this.options.baseUrl,
@@ -327,7 +327,7 @@ export class FizzyClient {
     reference: CardReference,
     tagTitles: string[],
   ): Promise<FizzyCard> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
     const existing = new Set(card.tags.map((tag) => normalizeName(tag)));
 
     for (const tagTitle of tagTitles) {
@@ -340,7 +340,7 @@ export class FizzyClient {
   }
 
   async listComments(reference: CardReference): Promise<FizzyComment[]> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
     return requestJson<FizzyComment[]>(
       this.options.baseUrl,
       this.accountPath(`cards/${card.number}/comments.json`),
@@ -355,7 +355,7 @@ export class FizzyClient {
     reference: CardReference,
     body: string,
   ): Promise<FizzyComment> {
-    const card = await this.resolveCard(reference);
+    const card = await this.resolveCardRef(reference);
 
     return requestJson<FizzyComment>(
       this.options.baseUrl,
@@ -460,25 +460,32 @@ export class FizzyClient {
     );
   }
 
-  async resolveCard(reference: CardReference): Promise<FizzyCard> {
+  private async resolveCardRef(reference: CardReference): Promise<FizzyCard> {
     if (typeof reference === "object") {
-      if (typeof reference.number === "number") {
-        return this.getCardByNumber(reference.number);
-      }
-
-      return this.findCardById(reference.id);
+      return typeof reference.number === "number"
+        ? this.getCardByNumber(reference.number)
+        : this.getCardByOpaqueId(reference.id);
     }
 
-    const numeric = this.extractCardNumber(reference);
-
-    if (numeric !== null) {
-      return this.getCardByNumber(numeric);
+    if (typeof reference === "number") {
+      return this.getCardByNumber(reference);
     }
 
-    return this.findCardById(String(reference));
+    const trimmed = reference.trim();
+
+    if (/^\d+$/.test(trimmed)) {
+      return this.getCardByNumber(Number(trimmed));
+    }
+
+    const urlMatch = trimmed.match(/\/cards\/(\d+)(?:\.json)?$/);
+    if (urlMatch?.[1]) {
+      return this.getCardByNumber(Number(urlMatch[1]));
+    }
+
+    return this.getCardByOpaqueId(trimmed);
   }
 
-  private async findCardById(cardId: string): Promise<FizzyCard> {
+  private async getCardByOpaqueId(cardId: string): Promise<FizzyCard> {
     const cards = await this.listCards({ cardIds: [cardId] });
     const card = cards[0];
 
@@ -486,24 +493,9 @@ export class FizzyClient {
       throw new Error(`Unable to find Fizzy card ${cardId}`);
     }
 
+    // Fizzy's list endpoint returns a reduced card shape. Re-fetch the single
+    // card resource so callers always receive the full representation.
     return this.getCardByNumber(card.number);
-  }
-
-  private extractCardNumber(reference: string | number): number | null {
-    if (typeof reference === "number") {
-      return reference;
-    }
-
-    if (/^\d+$/.test(reference)) {
-      return Number(reference);
-    }
-
-    const urlMatch = reference.match(/\/cards\/(\d+)(?:\.json)?$/);
-    if (urlMatch?.[1]) {
-      return Number(urlMatch[1]);
-    }
-
-    return null;
   }
 
   private accountPath(path: string): string {

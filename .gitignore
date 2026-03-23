@@ -8,3 +8,4 @@ deploy/mcp.env
 .grafana
 .DS_Store
 var
+.claude

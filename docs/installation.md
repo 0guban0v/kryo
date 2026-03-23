@@ -72,6 +72,7 @@ Defaults for Gitea:
 
 By default, Kryo locks git-forge edits to the bootstrapped repo by setting `GIT_FORGE_ALLOW_REPO_OVERRIDE=false`.
 Set it to `true` only if you intentionally want one Kryo instance to operate on multiple repos.
+`GIT_FORGE_TOKEN` is required at startup because Kryo always exposes git-forge workflows; a Fizzy-only deployment mode is not currently supported.
 
 Override them when needed:
 

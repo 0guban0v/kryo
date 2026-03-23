@@ -4,6 +4,18 @@ import test from "node:test";
 import { GitForgeClient } from "../src/adapters/github.js";
 import { loadConfig } from "../src/config.js";
 
+test("git forge token is required at startup", () => {
+  assert.throws(
+    () =>
+      loadConfig({
+        FIZZY_URL: "http://fizzy.internal",
+        FIZZY_API_TOKEN: "fizzy-token",
+        FIZZY_ACCOUNT_ID: "account-1",
+      }),
+    /GIT_FORGE_TOKEN is required at startup/,
+  );
+});
+
 test("git forge repo overrides are disabled by default", () => {
   const config = loadConfig({
     FIZZY_URL: "http://fizzy.internal",
@@ -11,6 +23,7 @@ test("git forge repo overrides are disabled by default", () => {
     FIZZY_ACCOUNT_ID: "account-1",
     GIT_FORGE_PROVIDER: "gitea",
     GIT_FORGE_API_URL: "http://gitea.internal/api/v1",
+    GIT_FORGE_TOKEN: "token",
     GIT_FORGE_REPO: "platform-team/dev-sandbox",
   });
 

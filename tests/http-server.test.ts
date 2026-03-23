@@ -13,6 +13,9 @@ import {
 import { Logger } from "../src/logger.js";
 import type { MissionControlServices } from "../src/runtime.js";
 
+const LOOPBACK_HTTP_HOSTS = ["127.0.0.1", "localhost"] as const;
+const DEFAULT_ALLOWED_HOSTS = "127.0.0.1,localhost,mcp";
+
 function createMockServices(
   overrides: Partial<MissionControlServices> = {},
   envOverrides: Record<string, string> = {},
@@ -21,10 +24,11 @@ function createMockServices(
     FIZZY_URL: "http://fizzy.internal",
     FIZZY_API_TOKEN: "fizzy-token",
     FIZZY_ACCOUNT_ID: "account-1",
+    GIT_FORGE_TOKEN: "git-forge-token",
     MCP_TRANSPORT: "streamable-http",
     MCP_HTTP_SESSION_MODE: "stateless",
     MCP_HOST: "127.0.0.1",
-    MCP_ALLOWED_HOSTS: "127.0.0.1,localhost,mcp",
+    MCP_ALLOWED_HOSTS: DEFAULT_ALLOWED_HOSTS,
     MCP_PORT: "3100",
     ...envOverrides,
   });
@@ -164,9 +168,9 @@ test("stateless MCP returns parse errors for invalid JSON payloads", async () =>
 });
 
 test("startHttpServer waits for listen and rejects bind conflicts", async () => {
-  const firstApp = createMissionControlHttpApp(["127.0.0.1", "localhost"]);
+  const firstApp = createMissionControlHttpApp([...LOOPBACK_HTTP_HOSTS]);
 
-  const secondApp = createMissionControlHttpApp(["127.0.0.1", "localhost"]);
+  const secondApp = createMissionControlHttpApp([...LOOPBACK_HTTP_HOSTS]);
 
   const port = await getAvailablePort();
   const firstServer = await startHttpServer(firstApp, "127.0.0.1", port);
@@ -334,7 +338,7 @@ test("stateful MCP DELETE terminates the active session", async () => {
 });
 
 test("stateful MCP session cap is enforced under concurrent initialization", async () => {
-  const app = createMissionControlHttpApp(["127.0.0.1", "localhost"]);
+  const app = createMissionControlHttpApp([...LOOPBACK_HTTP_HOSTS]);
   registerMcpHttpRoutes(
     app,
     createMockServices(

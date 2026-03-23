@@ -30,6 +30,10 @@ export function createMissionControlServer(
     },
   );
 
+  // This mutex is scoped to a single McpServer instance. In HTTP stateful mode
+  // we create one server per MCP session during initialize; in stateless mode
+  // we create one per request. Tool serialization is therefore session-local,
+  // not global across all clients.
   const mutex = new AsyncMutex();
 
   registerPickUpWorkTool(server, services, mutex);

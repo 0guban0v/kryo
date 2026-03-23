@@ -15,6 +15,7 @@ import {
   createCard,
   getBoardStatus,
   pickUpWork,
+  submitForReview,
   troubleshoot,
 } from "../src/workflows/index.js";
 import { updateProgress } from "../src/workflows/update-progress.js";
@@ -211,6 +212,94 @@ test("completeWork refuses to merge when checks are pending", async () => {
   assert.match(result.markdown, /Overall check state: pending/);
 });
 
+test("submitForReview reports partial success when Fizzy follow-up fails", async () => {
+  const review = makeColumn("col-review", "Review");
+  const card = makeCard();
+
+  const services = createMockServices({
+    fizzy: {
+      getCard: async (reference: unknown) => toCard(reference, card),
+      addComment: async () => {
+        throw new Error("comment service unavailable");
+      },
+      findColumnByName: async (_boardId: string, name: string) =>
+        name === "Review" ? review : undefined,
+      moveCardToColumn: async () =>
+        makeCard({
+          column: review,
+        }),
+    },
+    github: {
+      createPullRequest: async () => ({
+        number: 17,
+        html_url: "http://gitea/pr/17",
+      }),
+    },
+  });
+
+  const result = await submitForReview(services, {
+    cardId: "card-1",
+    branch: "feature/health",
+    title: "Add health endpoint",
+  });
+
+  assert.equal(
+    result.summary,
+    "⚠ Partial success: PR #17 was created for #1 Implement health endpoint, but follow-up updates failed.",
+  );
+  assert.match(result.markdown, /PR #17: http:\/\/gitea\/pr\/17/);
+  assert.match(
+    result.markdown,
+    /⚠ Card comment failed\. comment service unavailable/,
+  );
+  assert.match(result.markdown, /Card moved to Review\./);
+});
+
+test("completeWork reports partial success when card move fails after merge", async () => {
+  const successfulChecks: GitHubCheckSummary = {
+    overall: "success",
+    headSha: "abc123",
+    combinedState: "success",
+    statuses: [],
+    checkRuns: [],
+  };
+
+  const services = createMockServices({
+    fizzy: {
+      getCard: async () => makeCard(),
+      findColumnByName: async () => undefined,
+      closeCard: async () => {
+        throw new Error("close service unavailable");
+      },
+    },
+    github: {
+      getPullRequestChecks: async () => successfulChecks,
+      mergePullRequest: async () => ({
+        merged: true,
+        message: "Pull Request successfully merged",
+      }),
+    },
+  });
+
+  const result = await completeWork(services, {
+    cardId: "card-1",
+    prNumber: 42,
+  });
+
+  assert.equal(
+    result.summary,
+    "⚠ Partial success: PR #42 was merged, but #1 Implement health endpoint could not be moved to Done.",
+  );
+  assert.match(
+    result.markdown,
+    /Merge response: Pull Request successfully merged/,
+  );
+  assert.match(
+    result.markdown,
+    /⚠ Card move failed\. close service unavailable/,
+  );
+});
+
 test("createCard applies tags and moves the card", async () => {
   const inProgress = makeColumn("col-progress", "In Progress");
   const createdCard = makeCard({
@@ -324,7 +413,7 @@ test('updateProgress maps "In Progress" to the active Fizzy state when no column
   assert.match(result.markdown, /Column: Maybe/);
 });
 
-test("troubleshoot writes a targeted health-endpoint comment", async () => {
+test("troubleshoot writes raw context and error output", async () => {
   const comments: string[] = [];
 
   const services = createMockServices({
@@ -339,6 +428,7 @@ test("troubleshoot writes a targeted health-endpoint comment", async () => {
   const result = await troubleshoot(services, {
     cardId: "card-1",
     errorOutput: "GET /health returned 404 Not Found",
+    context: "running a deployment smoke test",
   });
 
   assert.equal(
@@ -348,6 +438,10 @@ test("troubleshoot writes a targeted health-endpoint comment", async () => {
   assert.equal(comments.length, 1);
   const firstComment = comments[0];
   assert.ok(firstComment);
-  assert.match(firstComment, /\/health` endpoint that does not exist yet/);
-  assert.match(result.markdown, /Priority: p1/);
+  assert.match(firstComment, /Context: running a deployment smoke test/);
+  assert.match(firstComment, /GET \/health returned 404 Not Found/);
+  assert.match(
+    result.markdown,
+    /Analysis: deferred to the caller or external reasoning layer\./,
+  );
 });

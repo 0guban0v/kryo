@@ -6,13 +6,41 @@ import {
 import type { MissionControlServices } from "../runtime.js";
 import { getBoardStatus } from "../workflows/board-status.js";
 
+const BOARD_RESOURCE_CACHE_TTL_MS = 30_000;
+
 export function registerBoardStatusResource(
   server: McpServer,
   services: MissionControlServices,
 ): void {
+  let cachedBoards:
+    | {
+        loadedAt: number;
+        boards: Awaited<
+          ReturnType<MissionControlServices["fizzy"]["listBoards"]>
+        >;
+      }
+    | undefined;
+
+  async function getBoardsForResource() {
+    const now = Date.now();
+    if (
+      cachedBoards &&
+      now - cachedBoards.loadedAt < BOARD_RESOURCE_CACHE_TTL_MS
+    ) {
+      return cachedBoards.boards;
+    }
+
+    const boards = await services.fizzy.listBoards();
+    cachedBoards = {
+      loadedAt: now,
+      boards,
+    };
+    return boards;
+  }
+
   const template = new ResourceTemplate("board://status/{boardId}", {
     list: async () => {
-      const boards = await services.fizzy.listBoards();
+      const boards = await getBoardsForResource();
       return {
         resources: boards.map((board) => ({
           uri: `board://status/${board.id}`,
@@ -25,7 +53,7 @@ export function registerBoardStatusResource(
     },
     complete: {
       boardId: async (value) => {
-        const boards = await services.fizzy.listBoards();
+        const boards = await getBoardsForResource();
         return boards
           .map((board) => board.id)
           .filter((boardId) => boardId.startsWith(value));

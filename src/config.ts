@@ -10,7 +10,10 @@ import type {
 } from "./types.js";
 import { normalizeHost } from "./utils/host.js";
 
-const optionalBoolean = z.preprocess((value) => {
+const LOOPBACK_ALLOWED_HOSTS = ["127.0.0.1", "localhost", "::1"] as const;
+const WILDCARD_ALLOWED_HOSTS = [...LOOPBACK_ALLOWED_HOSTS, "mcp"] as const;
+
+function preprocessEnvBoolean(value: unknown): boolean | undefined | unknown {
   if (value === undefined || value === "") {
     return undefined;
   }
@@ -30,38 +33,34 @@ const optionalBoolean = z.preprocess((value) => {
   }
 
   return value;
-}, z.boolean().optional());
+}
+
+function preprocessOptionalString(
+  value: unknown,
+): string | undefined | unknown {
+  if (typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
+const optionalBoolean = z.preprocess(
+  preprocessEnvBoolean,
+  z.boolean().optional(),
+);
 
 const booleanWithDefault = (fallback: boolean) =>
   z.preprocess((value) => {
-    if (value === undefined || value === "") {
-      return fallback;
-    }
-
-    if (typeof value === "boolean") {
-      return value;
-    }
-
-    if (typeof value === "string") {
-      if (value === "true") {
-        return true;
-      }
-
-      if (value === "false") {
-        return false;
-      }
-    }
-
-    return value;
+    const parsed = preprocessEnvBoolean(value);
+    return parsed === undefined ? fallback : parsed;
   }, z.boolean());
 
-const optionalNonEmptyString = z.preprocess((value) => {
-  if (value === undefined || value === "") {
-    return undefined;
-  }
-
-  return value;
-}, z.string().min(1).optional());
+const optionalNonEmptyString = z.preprocess(
+  preprocessOptionalString,
+  z.string().min(1).optional(),
+);
 
 const optionalCommaSeparatedStrings = z.preprocess((value) => {
   if (value === undefined || value === "") {
@@ -205,15 +204,15 @@ function defaultAllowedHosts(host: string): string[] {
   const normalizedHost = normalizeHost(host);
 
   if (normalizedHost === "0.0.0.0" || normalizedHost === "::") {
-    return ["127.0.0.1", "localhost", "::1", "mcp"];
+    return [...WILDCARD_ALLOWED_HOSTS];
   }
 
   if (
-    normalizedHost === "127.0.0.1" ||
-    normalizedHost === "localhost" ||
-    normalizedHost === "::1"
+    LOOPBACK_ALLOWED_HOSTS.includes(
+      normalizedHost as (typeof LOOPBACK_ALLOWED_HOSTS)[number],
+    )
   ) {
-    return ["127.0.0.1", "localhost", "::1"];
+    return [...LOOPBACK_ALLOWED_HOSTS];
   }
 
   return [normalizedHost];
@@ -249,6 +248,12 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     ),
   });
 
+  if (!env.GIT_FORGE_TOKEN) {
+    throw new Error(
+      "GIT_FORGE_TOKEN is required at startup because Kryo exposes git forge workflows.",
+    );
+  }
+
   return {
     fizzy: {
       baseUrl: trimTrailingSlash(env.FIZZY_URL),
@@ -260,7 +265,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     github: {
       provider: env.GIT_FORGE_PROVIDER,
       apiUrl: trimTrailingSlash(env.GIT_FORGE_API_URL),
-      ...(env.GIT_FORGE_TOKEN ? { token: env.GIT_FORGE_TOKEN } : {}),
+      token: env.GIT_FORGE_TOKEN,
       ...(env.GIT_FORGE_REPO ? { defaultRepo: env.GIT_FORGE_REPO } : {}),
       allowRepoOverride: env.GIT_FORGE_ALLOW_REPO_OVERRIDE ?? false,
       defaultBranch: env.GIT_FORGE_DEFAULT_BRANCH,
