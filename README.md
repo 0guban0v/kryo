@@ -1,41 +1,33 @@
 # Kryo
 
-Self-hosted MCP server for developer workflow orchestration across Fizzy and a GitHub-compatible git forge, designed for air-gapped or defense-sensitive environments.
+Self-hosted MCP server for developer workflow automation across Fizzy and a GitHub-compatible git forge.
 
-## What It Does
+## Tools
 
-`kryo` lets an agent:
+| Tool | Description |
+| --- | --- |
+| `pick_up_work` | Assign and move a card to In Progress |
+| `update_progress` | Post a progress comment on a card |
+| `submit_for_review` | Open a PR and move the card to Review |
+| `complete_work` | Merge a PR and move the card to Done |
+| `report_blocker` | Add a blocker comment and move card to blocked state |
+| `create_card` | Create a new card on the board |
+| `troubleshoot` | Summarize context for debugging |
 
-- pick up work from a Fizzy board
-- move cards through workflow states
-- report blockers and create follow-up work
-- create and merge pull requests against a GitHub-compatible forge
-
-The server is workflow-oriented rather than a thin API wrapper. Tools compose multiple Fizzy and forge operations into one intent.
-
-## Local Bootstrap
-
-For a clean local start with the full local stack, including observability:
+## Setup
 
 ```sh
 cp .env.example yourname.env
 make deploy-all ENV_FILE=yourname.env
 ```
 
-The Makefile intentionally defaults `ENV_FILE` to a placeholder so Compose-backed targets fail fast until you pick a real local env file name and pass `ENV_FILE=...`.
-
-`make deploy-all` runs the idempotent bootstrap flow, starts the core developer workflow services, and brings up the local observability profile. Installation details, seeded demo identities, login helpers, and the broader Make target reference live in the docs.
-
-| Service | Purpose | URL |
-| --- | --- | --- |
-| MCP HTTP | MCP endpoint | [http://localhost:3100/mcp](http://localhost:3100/mcp) |
-| MCP Health | Kryo liveness check | [http://localhost:3100/up](http://localhost:3100/up) |
-| Fizzy | Board UI | [http://localhost:3006](http://localhost:3006) |
-| Gitea | Git forge UI | [http://localhost:3007](http://localhost:3007) |
-| Grafana | Dashboards | [http://localhost:3001](http://localhost:3001) |
-| Prometheus | Metrics and query UI | [http://localhost:9090](http://localhost:9090) |
-| blackbox-exporter | Probe debug endpoint | [http://localhost:9115](http://localhost:9115) |
-| Loki | Log API | [http://localhost:3101](http://localhost:3101) |
+| Service | URL |
+| --- | --- |
+| MCP endpoint | http://localhost:3100/mcp |
+| Fizzy | http://localhost:3006 |
+| Gitea | http://localhost:3007 |
+| Grafana | http://localhost:3001 |
+| Prometheus | http://localhost:9090 |
 
 ## Docs
 
