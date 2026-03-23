@@ -58,7 +58,9 @@ function buildUrl(
   path: string,
   query?: Record<string, QueryValue>,
 ): URL {
-  const url = new URL(path, baseUrl);
+  const base = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  const relative = path.startsWith("/") ? path.slice(1) : path;
+  const url = new URL(relative, base);
 
   if (!query) {
     return url;

@@ -3,3 +3,4 @@
 include make/common.mk
 include make/container.mk
 include make/observability.mk
+include make/llm.mk

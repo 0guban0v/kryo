@@ -7,7 +7,7 @@ import type {
   GitHubPullRequest,
   GitHubStatusContext,
 } from "../types.js";
-import { HttpError, requestJson } from "../utils/http.js";
+import { HttpError, requestJson, requestRaw } from "../utils/http.js";
 
 interface GitHubCombinedStatus {
   state: string;
@@ -109,16 +109,22 @@ export class GitForgeClient {
   }): Promise<{ merged: boolean; message: string }> {
     const repo = this.resolveRepo(input.repo);
 
-    return requestJson<{ merged: boolean; message: string }>(
+    // GitHub returns JSON { merged, message }; Gitea returns 200 with empty body.
+    const response = await requestRaw(
       this.options.apiUrl,
       `/repos/${repo}/pulls/${input.prNumber}/merge`,
       {
-        method: "PUT",
+        method: this.options.provider === "gitea" ? "POST" : "PUT",
         headers: this.requestHeaders(),
         body: this.mergePayload(input.commitTitle),
         timeoutMs: this.options.timeoutMs,
       },
     );
+    const text = await response.text();
+    if (text) {
+      return JSON.parse(text) as { merged: boolean; message: string };
+    }
+    return { merged: true, message: "Pull Request successfully merged" };
   }
 
   async getPullRequestChecks(
@@ -150,7 +156,7 @@ export class GitForgeClient {
     repo: string,
     sha: string,
   ): Promise<GitHubCombinedStatus> {
-    return requestJson<GitHubCombinedStatus>(
+    const result = await requestJson<GitHubCombinedStatus>(
       this.options.apiUrl,
       `/repos/${repo}/commits/${sha}/status`,
       {
@@ -158,6 +164,8 @@ export class GitForgeClient {
         timeoutMs: this.options.timeoutMs,
       },
     );
+    // Gitea returns `statuses: null` when there are no statuses; normalise to [].
+    return { ...result, statuses: result.statuses ?? [] };
   }
 
   private async getCheckRunsWithFallback(
@@ -226,7 +234,9 @@ export class GitForgeClient {
       ? checkRuns.every((checkRun) =>
           ["success", "neutral", "skipped"].includes(checkRun.conclusion ?? ""),
         )
-      : combinedState === "success";
+      : // An empty combined state means no CI has run — treat as pass when
+        // there are also no check runs (i.e. forge has no checks configured).
+        combinedState === "success" || combinedState === "";
 
     if (successfulChecks) {
       return "success";
