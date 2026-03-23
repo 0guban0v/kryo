@@ -411,6 +411,36 @@ export class FizzyClient {
     );
   }
 
+  async resolveBoardIdOrName(boardIdOrName?: string): Promise<string> {
+    if (boardIdOrName) {
+      const trimmed = boardIdOrName.trim();
+      const boards = await this.listBoards();
+
+      const exactId = boards.find((board) => board.id === trimmed);
+      if (exactId) {
+        return exactId.id;
+      }
+
+      const matches = boards.filter(
+        (board) => normalizeName(board.name) === normalizeName(trimmed),
+      );
+
+      if (matches.length === 1) {
+        return matches[0]?.id ?? trimmed;
+      }
+
+      if (matches.length > 1) {
+        throw new Error(
+          `Multiple Fizzy boards match "${boardIdOrName}". Please specify the board ID instead.`,
+        );
+      }
+
+      throw new Error(`Unable to find a Fizzy board named "${boardIdOrName}".`);
+    }
+
+    return this.resolveBoardId();
+  }
+
   resolveBoardId(boardId?: string): string {
     if (boardId) {
       return boardId;

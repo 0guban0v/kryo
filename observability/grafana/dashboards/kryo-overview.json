@@ -73,21 +73,6 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "campfire"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "#ff4d6d",
-                  "mode": "fixed"
-                }
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
               "options": "gitea"
             },
             "properties": [

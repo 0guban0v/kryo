@@ -1,11 +1,10 @@
 import type { CardReference } from "../adapters/fizzy.js";
 import type { MissionControlServices } from "../runtime.js";
-import type { NotificationOptions, WorkflowResult } from "../types.js";
+import type { WorkflowResult } from "../types.js";
 import { bullet, heading, joinSections } from "../utils/markdown.js";
 import {
   cardDetailsMarkdown,
   cardLabel,
-  notifyCampfireIfNeeded,
   tryMoveCardToTarget,
 } from "./shared.js";
 
@@ -18,7 +17,6 @@ export interface CompleteWorkInput {
 export async function completeWork(
   services: MissionControlServices,
   input: CompleteWorkInput,
-  options: NotificationOptions = {},
 ): Promise<WorkflowResult> {
   const [card, checks] = await Promise.all([
     services.fizzy.getCard(input.cardId),
@@ -59,12 +57,6 @@ export async function completeWork(
     services.config.workflow.doneLabel,
   );
   const summary = `Merged PR #${input.prNumber} and completed ${cardLabel(card)}.`;
-
-  await notifyCampfireIfNeeded(
-    services,
-    `${summary} ${merge.message}`,
-    options,
-  );
 
   return {
     summary,

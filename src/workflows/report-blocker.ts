@@ -1,11 +1,10 @@
 import type { CardReference } from "../adapters/fizzy.js";
 import type { MissionControlServices } from "../runtime.js";
-import type { NotificationOptions, WorkflowResult } from "../types.js";
+import type { WorkflowResult } from "../types.js";
 import { codeFence, heading, joinSections } from "../utils/markdown.js";
 import {
   cardDetailsMarkdown,
   cardLabel,
-  notifyCampfireIfNeeded,
   tryMoveCardToTarget,
 } from "./shared.js";
 
@@ -18,7 +17,6 @@ export interface ReportBlockerInput {
 export async function reportBlocker(
   services: MissionControlServices,
   input: ReportBlockerInput,
-  options: NotificationOptions = {},
 ): Promise<WorkflowResult> {
   const card = await services.fizzy.getCard(input.cardId);
   const moved = await tryMoveCardToTarget(
@@ -36,8 +34,6 @@ export async function reportBlocker(
   await services.fizzy.addComment(card, comment);
 
   const summary = `Reported ${cardLabel(card)} as blocked.`;
-
-  await notifyCampfireIfNeeded(services, `${summary} ${input.reason}`, options);
 
   return {
     summary,

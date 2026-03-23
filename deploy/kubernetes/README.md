@@ -5,12 +5,12 @@ These manifests are a starter deployment example for the `mcp` service.
 They intentionally assume:
 
 - the images are built and pushed separately
-- Fizzy, Campfire, and the configured git forge are reachable through URLs supplied in config
+- Fizzy and the configured git forge are reachable through URLs supplied in config
 - the Infisical operator is installed in the cluster before you apply the `InfisicalSecret` resource
 
 The `mcp-config` ConfigMap ships placeholder service URLs such as
 `http://fizzy.replace-me.svc.cluster.local`. Replace them for each environment instead of assuming
-Fizzy or Campfire run in a specific namespace.
+Fizzy or your git forge run in a specific namespace.
 
 Concrete secret flow in this directory:
 

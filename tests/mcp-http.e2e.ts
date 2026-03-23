@@ -30,7 +30,6 @@ test("live MCP HTTP endpoint initializes and exposes the expected surface", asyn
     const promptNames = new Set(prompts.prompts.map((prompt) => prompt.name));
     assert.ok(promptNames.has("code-review"));
     assert.ok(promptNames.has("bug-triage"));
-    assert.ok(promptNames.has("kryo-bot-system"));
 
     const resources = await client.listResources();
     assert.ok(Array.isArray(resources.resources));

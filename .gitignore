@@ -4,7 +4,7 @@ build
 .venv
 *.env
 !.env.example
+deploy/mcp.env
 .grafana
 .DS_Store
 var
-!var/llm/.gitkeep

@@ -1,11 +1,10 @@
 import type { CardReference } from "../adapters/fizzy.js";
 import type { MissionControlServices } from "../runtime.js";
-import type { NotificationOptions, WorkflowResult } from "../types.js";
+import type { WorkflowResult } from "../types.js";
 import { heading, joinSections } from "../utils/markdown.js";
 import {
   cardDetailsMarkdown,
   cardLabel,
-  notifyCampfireIfNeeded,
   tryMoveCardToTarget,
 } from "./shared.js";
 
@@ -21,7 +20,6 @@ export interface SubmitForReviewInput {
 export async function submitForReview(
   services: MissionControlServices,
   input: SubmitForReviewInput,
-  options: NotificationOptions = {},
 ): Promise<WorkflowResult> {
   const card = await services.fizzy.getCard(input.cardId);
   const pullRequest = await services.github.createPullRequest({
@@ -43,12 +41,6 @@ export async function submitForReview(
     services.config.workflow.reviewColumnName,
   );
   const summary = `Submitted ${cardLabel(card)} for review as PR #${pullRequest.number}.`;
-
-  await notifyCampfireIfNeeded(
-    services,
-    `${summary} ${pullRequest.html_url}`,
-    options,
-  );
 
   return {
     summary,

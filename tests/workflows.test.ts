@@ -13,6 +13,7 @@ import type {
 import {
   completeWork,
   createCard,
+  getBoardStatus,
   pickUpWork,
   troubleshoot,
 } from "../src/workflows/index.js";
@@ -82,7 +83,6 @@ function toCard(reference: unknown, fallback: FizzyCard): FizzyCard {
 
 function createMockServices(input: {
   fizzy: Record<string, unknown>;
-  campfire?: Record<string, unknown>;
   github?: Record<string, unknown>;
 }): MissionControlServices {
   return {
@@ -104,13 +104,11 @@ function createMockServices(input: {
     } as MissionControlServices["config"],
     logger: new Logger("error"),
     fizzy: input.fizzy as unknown as MissionControlServices["fizzy"],
-    campfire: (input.campfire ??
-      {}) as unknown as MissionControlServices["campfire"],
     github: (input.github ?? {}) as unknown as MissionControlServices["github"],
   };
 }
 
-test("pickUpWork assigns the oldest matching card and notifies Campfire", async () => {
+test("pickUpWork assigns the oldest matching card", async () => {
   const toDo = makeColumn("col-todo", "To Do");
   const inProgress = makeColumn("col-progress", "In Progress");
   const currentUser: FizzyUser = { id: "user-1", name: "Ada" };
@@ -130,12 +128,11 @@ test("pickUpWork assigns the oldest matching card and notifies Campfire", async 
     assignees: [currentUser],
   });
 
-  const notifications: string[] = [];
   const assignedTo: string[] = [];
 
   const services = createMockServices({
     fizzy: {
-      resolveBoardId: () => board.id,
+      resolveBoardIdOrName: async () => board.id,
       getCurrentUser: async () => currentUser,
       findColumnByName: async (_boardId: string, name: string) => {
         if (name === "To Do") {
@@ -159,11 +156,6 @@ test("pickUpWork assigns the oldest matching card and notifies Campfire", async 
         return movedCard;
       },
     },
-    campfire: {
-      postMessage: async ({ body }: { body: string }) => {
-        notifications.push(body);
-      },
-    },
   });
 
   const result = await pickUpWork(services, {
@@ -175,10 +167,6 @@ test("pickUpWork assigns the oldest matching card and notifies Campfire", async 
     "Picked up #1 Implement health endpoint and moved it to In Progress.",
   );
   assert.deepEqual(assignedTo, [currentUser.id]);
-  assert.equal(notifications.length, 1);
-  const firstNotification = notifications[0];
-  assert.ok(firstNotification);
-  assert.match(firstNotification, /Assigned to Ada\./);
 });
 
 test("completeWork refuses to merge when checks are pending", async () => {
@@ -197,16 +185,9 @@ test("completeWork refuses to merge when checks are pending", async () => {
   };
 
   let merged = false;
-  let notifications = 0;
-
   const services = createMockServices({
     fizzy: {
       getCard: async () => makeCard(),
-    },
-    campfire: {
-      postMessage: async () => {
-        notifications += 1;
-      },
     },
     github: {
       getPullRequestChecks: async () => pendingChecks,
@@ -227,11 +208,10 @@ test("completeWork refuses to merge when checks are pending", async () => {
     "PR #42 was not merged because checks are pending.",
   );
   assert.equal(merged, false);
-  assert.equal(notifications, 0);
   assert.match(result.markdown, /Overall check state: pending/);
 });
 
-test("createCard applies tags, moves the card, and notifies Campfire", async () => {
+test("createCard applies tags and moves the card", async () => {
   const inProgress = makeColumn("col-progress", "In Progress");
   const createdCard = makeCard({
     id: "card-2",
@@ -253,11 +233,12 @@ test("createCard applies tags, moves the card, and notifies Campfire", async () 
     column: inProgress,
   });
 
-  const notifications: string[] = [];
-
   const services = createMockServices({
     fizzy: {
-      resolveBoardId: () => board.id,
+      resolveBoardIdOrName: async (value?: string) => {
+        assert.equal(value, "Kryo");
+        return board.id;
+      },
       createCard: async (
         _boardId: string,
         card: { title: string; description?: string },
@@ -277,14 +258,10 @@ test("createCard applies tags, moves the card, and notifies Campfire", async () 
         return movedCard;
       },
     },
-    campfire: {
-      postMessage: async ({ body }: { body: string }) => {
-        notifications.push(body);
-      },
-    },
   });
 
   const result = await createCard(services, {
+    boardId: "Kryo",
     title: "Fix auth timeout",
     body: "API calls fail after 7 seconds.",
     tags: ["bug", "p1"],
@@ -292,9 +269,32 @@ test("createCard applies tags, moves the card, and notifies Campfire", async () 
   });
 
   assert.equal(result.summary, "Created #2 Fix auth timeout on Kryo.");
-  assert.equal(notifications.length, 1);
   assert.match(result.markdown, /Placed in In Progress\./);
   assert.match(result.markdown, /Tags: bug, p1/);
+});
+
+test("getBoardStatus resolves a board name before reading cards", async () => {
+  const services = createMockServices({
+    fizzy: {
+      resolveBoardIdOrName: async (value?: string) => {
+        assert.equal(value, "Kryo");
+        return board.id;
+      },
+      getBoard: async (boardId: string) => {
+        assert.equal(boardId, board.id);
+        return board;
+      },
+      listBoardCards: async (boardId: string) => {
+        assert.equal(boardId, board.id);
+        return [];
+      },
+    },
+  });
+
+  const result = await getBoardStatus(services, "Kryo");
+
+  assert.match(result.summary, /Board Kryo:/);
+  assert.match(result.markdown, /Board Status: Kryo/);
 });
 
 test('updateProgress maps "In Progress" to the active Fizzy state when no column exists', async () => {
@@ -324,20 +324,14 @@ test('updateProgress maps "In Progress" to the active Fizzy state when no column
   assert.match(result.markdown, /Column: Maybe/);
 });
 
-test("troubleshoot writes a targeted health-endpoint comment and notifies Campfire", async () => {
+test("troubleshoot writes a targeted health-endpoint comment", async () => {
   const comments: string[] = [];
-  const notifications: string[] = [];
 
   const services = createMockServices({
     fizzy: {
       getCard: async () => makeCard(),
       addComment: async (_card: FizzyCard, comment: string) => {
         comments.push(comment);
-      },
-    },
-    campfire: {
-      postMessage: async ({ body }: { body: string }) => {
-        notifications.push(body);
       },
     },
   });
@@ -356,8 +350,4 @@ test("troubleshoot writes a targeted health-endpoint comment and notifies Campfi
   assert.ok(firstComment);
   assert.match(firstComment, /\/health` endpoint that does not exist yet/);
   assert.match(result.markdown, /Priority: p1/);
-  assert.equal(notifications.length, 1);
-  const firstTroubleshootNotification = notifications[0];
-  assert.ok(firstTroubleshootNotification);
-  assert.match(firstTroubleshootNotification, /Likely root cause/);
 });

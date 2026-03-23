@@ -17,7 +17,7 @@ export function registerCompleteWorkTool(
     "complete_work",
     {
       description:
-        "Merge a GitHub pull request when checks have passed, move the linked Fizzy card to Done, and notify Campfire.",
+        "Merge a GitHub pull request when checks have passed and move the linked Fizzy card to Done.",
       inputSchema: {
         card_id: z
           .union([z.string(), z.number()])

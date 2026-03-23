@@ -3,7 +3,6 @@ import { once } from "node:events";
 import { createServer } from "node:net";
 import test from "node:test";
 
-import { registerCampfireBotRoutes } from "../src/bot/server.js";
 import { loadConfig } from "../src/config.js";
 import {
   type HttpServerHandle,
@@ -22,13 +21,11 @@ function createMockServices(
     FIZZY_URL: "http://fizzy.internal",
     FIZZY_API_TOKEN: "fizzy-token",
     FIZZY_ACCOUNT_ID: "account-1",
-    CAMPFIRE_URL: "http://campfire.internal",
     MCP_TRANSPORT: "streamable-http",
     MCP_HTTP_SESSION_MODE: "stateless",
     MCP_HOST: "127.0.0.1",
     MCP_ALLOWED_HOSTS: "127.0.0.1,localhost,mcp",
     MCP_PORT: "3100",
-    BOT_WEBHOOK_AUTH: "none",
     ...envOverrides,
   });
 
@@ -36,15 +33,12 @@ function createMockServices(
     config,
     logger: new Logger("error"),
     fizzy: {
-      resolveBoardId: () => "board-1",
+      resolveBoardIdOrName: async () => "board-1",
       getBoard: async () => {
         throw new Error("not implemented");
       },
       listBoardCards: async () => [],
     } as unknown as MissionControlServices["fizzy"],
-    campfire: {
-      observeWebhook: () => undefined,
-    } as unknown as MissionControlServices["campfire"],
     github: {} as unknown as MissionControlServices["github"],
     ...overrides,
   };
@@ -121,7 +115,6 @@ function buildStatefulSessionHeaders(sessionId: string): HeadersInit {
 
 test("host validation rejects requests outside the configured allowlist", async () => {
   const app = createMissionControlHttpApp(["localhost"]);
-  registerCampfireBotRoutes(app, createMockServices());
 
   const denied = await app.request("http://localhost/up", {
     headers: {
@@ -144,53 +137,6 @@ test("createMissionControlHttpApp rejects an empty allowed host list", () => {
     () => createMissionControlHttpApp([]),
     /requires at least one allowed host/,
   );
-});
-
-test("streamable HTTP requires explicit webhook auth opt-out when no secret is set", () => {
-  assert.throws(
-    () =>
-      loadConfig({
-        FIZZY_URL: "http://fizzy.internal",
-        FIZZY_API_TOKEN: "fizzy-token",
-        FIZZY_ACCOUNT_ID: "account-1",
-        CAMPFIRE_URL: "http://campfire.internal",
-        MCP_TRANSPORT: "streamable-http",
-      }),
-    /BOT_WEBHOOK_SHARED_SECRET is required/,
-  );
-});
-
-test("webhook failures return a generic 500 response", async () => {
-  const app = createMissionControlHttpApp(["localhost"]);
-  registerCampfireBotRoutes(
-    app,
-    createMockServices({
-      fizzy: {
-        resolveBoardId: () => {
-          throw new Error("board lookup leaked detail");
-        },
-      } as unknown as MissionControlServices["fizzy"],
-    }),
-  );
-
-  const response = await app.request("http://localhost/campfire/webhook", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      host: "localhost",
-    },
-    body: JSON.stringify({
-      user: { id: "user-1", name: "Ada" },
-      room: { id: "room-1", name: "Engineering" },
-      message: {
-        id: "message-1",
-        body: { plain: "board status" },
-      },
-    }),
-  });
-
-  assert.equal(response.status, 500);
-  assert.equal(await response.text(), "Kryo bot error");
 });
 
 test("stateless MCP returns parse errors for invalid JSON payloads", async () => {
@@ -219,10 +165,8 @@ test("stateless MCP returns parse errors for invalid JSON payloads", async () =>
 
 test("startHttpServer waits for listen and rejects bind conflicts", async () => {
   const firstApp = createMissionControlHttpApp(["127.0.0.1", "localhost"]);
-  registerCampfireBotRoutes(firstApp, createMockServices());
 
   const secondApp = createMissionControlHttpApp(["127.0.0.1", "localhost"]);
-  registerCampfireBotRoutes(secondApp, createMockServices());
 
   const port = await getAvailablePort();
   const firstServer = await startHttpServer(firstApp, "127.0.0.1", port);

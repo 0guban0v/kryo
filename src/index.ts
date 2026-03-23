@@ -1,6 +1,5 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-import { registerCampfireBotRoutes } from "./bot/server.js";
 import { loadConfig } from "./config.js";
 import {
   createMissionControlHttpApp,
@@ -17,29 +16,14 @@ const logger = new Logger(config.logLevel);
 const services = createServices(config, logger);
 const app = createMissionControlHttpApp(config.mcp.allowedHosts);
 
-registerCampfireBotRoutes(app, services);
 const mcpHttpRuntime = registerMcpHttpRoutes(app, services);
 
 const httpServer = await startHttpServer(app, config.mcp.host, config.mcp.port);
 logger.info("HTTP server listening.", {
   host: config.mcp.host,
   port: config.mcp.port,
-  botWebhookPath: config.bot.webhookPath,
   mcpTransport: config.mcp.transport,
 });
-
-if (
-  config.mcp.transport === "streamable-http" &&
-  config.bot.auth.mode === "none"
-) {
-  logger.warn(
-    "Campfire webhook authentication is disabled inside kryo. Rely on an external network or ingress boundary only if this is intentional.",
-    {
-      webhookPath: config.bot.webhookPath,
-      authMode: config.bot.auth.mode,
-    },
-  );
-}
 
 let stdioServer: ReturnType<typeof createMissionControlServer> | undefined;
 

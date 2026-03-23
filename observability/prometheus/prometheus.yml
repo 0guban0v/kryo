@@ -21,10 +21,6 @@ scrape_configs:
         labels:
           service: fizzy
       - targets:
-          - http://campfire/up
-        labels:
-          service: campfire
-      - targets:
           - http://gitea:3000/api/healthz
         labels:
           service: gitea

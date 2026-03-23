@@ -28,15 +28,12 @@ make deploy-all ENV_FILE=yourname.env
 
 `make bootstrap`:
 
-- ensures `fizzy`, `campfire`, and `gitea` are running
+- ensures `fizzy` and `gitea` are running
 - creates or reuses a local Fizzy identity, account, and write token
-- creates or reuses a local Campfire administrator, room, and bot
 - creates or reuses a local Gitea administrator, a dedicated `platform-team` user, a service token, and a bootstrap repo
 - updates the selected env file with:
   - `FIZZY_ACCOUNT_ID`
   - `FIZZY_API_TOKEN`
-  - `CAMPFIRE_ROOM_ID`
-  - `CAMPFIRE_BOT_KEY`
   - `GIT_FORGE_API_URL`
   - `GIT_FORGE_TOKEN`
   - `GIT_FORGE_REPO`
@@ -64,14 +61,6 @@ Override the target email when needed:
 make fizzy-login-code ENV_FILE=yourname.env EMAIL=someone@example.com
 ```
 
-Defaults for Campfire:
-
-- administrator: `Platform Admin`
-- administrator email: `campfire-admin@demo.local`
-- administrator password: `campfire-admin`
-- room: `platform-ops`
-- bot: `Kryo`
-
 Defaults for Gitea:
 
 - root URL: `http://localhost:3007`
@@ -92,8 +81,6 @@ make bootstrap \
   BOOTSTRAP_FIZZY_ACCOUNT_NAME='Mission Systems' \
   BOOTSTRAP_FIZZY_OWNER_NAME='Mission Admin' \
   BOOTSTRAP_FIZZY_OWNER_EMAIL='mission-admin@example.local' \
-  BOOTSTRAP_CAMPFIRE_ROOM_NAME='mission-ops' \
-  BOOTSTRAP_CAMPFIRE_BOT_NAME='Kryo Mission Control' \
   BOOTSTRAP_GITEA_REPO_NAME='mission-control'
 ```
 
@@ -103,7 +90,6 @@ All of the targets below are Compose-backed and require `ENV_FILE=...`.
 
 - `make bootstrap ENV_FILE=yourname.env`
 - `make bootstrap-fizzy ENV_FILE=yourname.env`
-- `make bootstrap-campfire ENV_FILE=yourname.env`
 - `make bootstrap-gitea ENV_FILE=yourname.env`
 - `make deploy ENV_FILE=yourname.env`
 - `make deploy-all ENV_FILE=yourname.env`
@@ -126,51 +112,16 @@ It uses `MCP_E2E_URL`, which defaults to `http://127.0.0.1:3100/mcp`.
 When run through `make test-online`, the devbox container targets the Compose service URL `http://mcp:3100/mcp`.
 `make deadcode ENV_FILE=...` runs `knip`.
 `make quality ENV_FILE=...` runs `format:check`, `lint`, and `deadcode` in one step.
-`make down-reset ENV_FILE=...` is the destructive reset path: it removes the local Compose volumes and clears the host `vllm-mlx` PID/log files after stopping the host model process.
+`make down-reset ENV_FILE=...` is the destructive reset path: it removes the local Compose volumes.
 `make docker-prune-dangling-volumes` removes globally dangling Docker volumes, not just Kryo volumes.
 `make docker-prune-dangling-images` removes globally dangling Docker images, not just Kryo images.
-
-## Host Model Targets
-
-The local Apple Silicon model runtime is intentionally host-run, not containerized. Keep it in the repo-local `.venv`.
-
-- `make venv`
-- `make llm-install`
-- `make llm-serve`
-- `make llm-serve-bg`
-- `make llm-smoke`
-- `make llm-status`
-- `make llm-stop`
-- `make llm-logs`
-
-Defaults:
-
-- `.venv` is the virtual environment path
-- `make llm-install` runs `uv sync` from the minimal `pyproject.toml`
-- `make llm-serve` runs `uv run --python .venv/bin/python vllm-mlx serve`
-- `make llm-serve-bg` starts the same server in the background
-- the default endpoint is `http://127.0.0.1:8000`
-- the default model is `Qwen/Qwen3-14B-MLX-4bit`
-- the background PID and appended log live in `var/llm/`
-- set `LLM_API_KEY` to pass `--api-key` to `vllm-mlx` and let Kryo authenticate to the same server
-
-Override when needed:
-
-```sh
-make llm-serve VLLM_PORT=8010 VLLM_MLX_MODEL='your/model'
-```
-
-For model-server observability, `make llm-status` queries `vllm-mlx`'s built-in `/v1/status` endpoint and also reports whether the PID file still points to a live process. `make llm-logs` tails `var/llm/vllm-mlx.log`.
 
 ## Access Points
 
 - MCP HTTP: `http://localhost:3100/mcp`
 - `mcp` health: `http://localhost:3100/up`
-- Campfire bot webhook: `http://localhost:3100/campfire/webhook`
 - Fizzy: `http://localhost:3006`
-- Campfire: `http://localhost:3000`
 - Gitea: `http://localhost:3007`
 
 If you expose `kryo` on a non-local hostname, set `MCP_ALLOWED_HOSTS` to the ingress or proxy hostnames that should be accepted by the HTTP listener.
 If you use stateful HTTP sessions, tune `MCP_SESSION_IDLE_TTL_MS` and `MCP_MAX_SESSIONS` for your expected client count and reconnect behavior.
-For local disposable stacks, the checked-in example env intentionally sets `BOT_WEBHOOK_AUTH=none`. In deployed HTTP environments, prefer `BOT_WEBHOOK_AUTH=shared-secret` and set `BOT_WEBHOOK_SHARED_SECRET`.

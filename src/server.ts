@@ -2,9 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 import { registerBugTriagePrompt } from "./prompts/bug-triage.js";
 import { registerCodeReviewPrompt } from "./prompts/code-review.js";
-import { registerKryoBotSystemPrompt } from "./prompts/kryo-bot-system.js";
 import { registerBoardStatusResource } from "./resources/board-status.js";
-import { registerRecentMessagesResource } from "./resources/recent-messages.js";
 import type { MissionControlServices } from "./runtime.js";
 import { registerCompleteWorkTool } from "./tools/complete-work.js";
 import { registerCreateCardTool } from "./tools/create-card.js";
@@ -43,11 +41,9 @@ export function createMissionControlServer(
   registerTroubleshootTool(server, services, mutex);
 
   registerBoardStatusResource(server, services);
-  registerRecentMessagesResource(server, services);
 
   registerCodeReviewPrompt(server);
   registerBugTriagePrompt(server);
-  registerKryoBotSystemPrompt(server);
 
   return server;
 }

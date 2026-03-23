@@ -17,7 +17,7 @@ export function registerTroubleshootTool(
     "troubleshoot",
     {
       description:
-        "Analyze a failing test or error log, attach a structured troubleshooting comment to the Fizzy card, and notify Campfire.",
+        "Analyze a failing test or error log and attach a structured troubleshooting comment to the Fizzy card.",
       inputSchema: {
         card_id: z
           .union([z.string(), z.number()])

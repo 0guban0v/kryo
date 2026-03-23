@@ -9,7 +9,6 @@ test("git forge repo overrides are disabled by default", () => {
     FIZZY_URL: "http://fizzy.internal",
     FIZZY_API_TOKEN: "fizzy-token",
     FIZZY_ACCOUNT_ID: "account-1",
-    CAMPFIRE_URL: "http://campfire.internal",
     GIT_FORGE_PROVIDER: "gitea",
     GIT_FORGE_API_URL: "http://gitea.internal/api/v1",
     GIT_FORGE_REPO: "platform-team/dev-sandbox",

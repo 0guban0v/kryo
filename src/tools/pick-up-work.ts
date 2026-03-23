@@ -17,12 +17,14 @@ export function registerPickUpWorkTool(
     "pick_up_work",
     {
       description:
-        "Pick up the next available card from the To Do queue, assign it to the current Fizzy user, move it to In Progress, and notify Campfire.",
+        "Pick up the next available card from the To Do queue, assign it to the current Fizzy user, and move it to In Progress.",
       inputSchema: {
         board_id: z
           .string()
           .optional()
-          .describe("Fizzy board ID. Defaults to FIZZY_BOARD_ID."),
+          .describe(
+            "Fizzy board ID or board name. Defaults to FIZZY_BOARD_ID.",
+          ),
         priority_tag: z
           .string()
           .optional()

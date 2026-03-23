@@ -98,43 +98,6 @@ export interface FizzyIdentity {
   accounts: FizzyIdentityAccount[];
 }
 
-export interface CampfireWebhookPayload {
-  user: {
-    id: string | number;
-    name: string;
-  };
-  room: {
-    id: string | number;
-    name: string;
-    path: string;
-  };
-  message: {
-    id: string | number;
-    path: string;
-    body: {
-      html: string;
-      plain: string;
-    };
-  };
-}
-
-export interface CampfireObservedMessage {
-  roomId: string;
-  roomName: string;
-  messageId?: string | undefined;
-  body: string;
-  senderName: string;
-  observedAt: string;
-  path?: string | undefined;
-  source: "webhook" | "bot" | "api";
-}
-
-export interface CampfireRoomSummary {
-  id: string;
-  name: string;
-  path?: string | undefined;
-}
-
 export interface GitHubPullRequest {
   number: number;
   title: string;
@@ -176,10 +139,4 @@ export interface GitHubCheckSummary {
 export interface WorkflowResult {
   summary: string;
   markdown: string;
-}
-
-export interface NotificationOptions {
-  notifyCampfire?: boolean | undefined;
-  roomId?: string | undefined;
-  roomPath?: string | undefined;
 }

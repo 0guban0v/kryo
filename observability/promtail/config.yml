@@ -20,7 +20,7 @@ scrape_configs:
         regex: ^${PROMTAIL_COMPOSE_PROJECT_REGEX}$
         action: keep
       - source_labels: [__meta_docker_container_label_com_docker_compose_service]
-        regex: mcp|fizzy|campfire|gitea
+        regex: mcp|fizzy|gitea
         action: keep
       - source_labels: [__meta_docker_container_id]
         regex: (.*)

@@ -105,19 +105,6 @@ const envSchema = z.object({
   FIZZY_BOARD_SELECTION: z
     .enum(["configured", "require-explicit"])
     .default("configured"),
-  CAMPFIRE_URL: z.string().url(),
-  CAMPFIRE_BOT_KEY: optionalNonEmptyString,
-  CAMPFIRE_ROOM_ID: optionalNonEmptyString,
-  CAMPFIRE_ROOM_SELECTION: z
-    .enum(["configured", "require-explicit"])
-    .default("configured"),
-  CAMPFIRE_SESSION_COOKIE: optionalNonEmptyString,
-  CAMPFIRE_TRANSCRIPT_LIMIT: z.coerce.number().int().positive().default(100),
-  CAMPFIRE_RECENT_MESSAGES_LIMIT: z.coerce
-    .number()
-    .int()
-    .positive()
-    .default(20),
   GIT_FORGE_PROVIDER: z.enum(["github", "ghes", "gitea"]).default("github"),
   GIT_FORGE_API_URL: z.string().url().default("https://api.github.com"),
   GIT_FORGE_TOKEN: optionalNonEmptyString,
@@ -158,23 +145,6 @@ const envSchema = z.object({
   MCP_MAX_SESSIONS: z.coerce.number().int().positive().default(100),
   MCP_PORT: z.coerce.number().int().positive().default(3100),
   MCP_PATH: z.string().min(1).default("/mcp"),
-  BOT_WEBHOOK_PATH: z.string().min(1).default("/campfire/webhook"),
-  BOT_WEBHOOK_AUTH: z.enum(["shared-secret", "none"]).default("shared-secret"),
-  BOT_WEBHOOK_SHARED_SECRET: optionalNonEmptyString,
-  BOT_WEBHOOK_SHARED_SECRET_HEADER: z
-    .string()
-    .min(1)
-    .default("x-kryo-webhook-secret"),
-  BOT_MODE: z.enum(["rules", "agent"]).default("rules"),
-  BOT_MAX_AGENT_STEPS: z.coerce.number().int().positive().default(12),
-  LLM_BASE_URL: optionalNonEmptyString,
-  LLM_MODEL: optionalNonEmptyString,
-  LLM_API_KEY: optionalNonEmptyString,
-  LLM_LOG_IO: booleanWithDefault(false),
-  LLM_CHAT_COMPLETIONS_PATH: z.string().min(1).default("/v1/chat/completions"),
-  LLM_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
-  BOT_REPO_PATH: optionalNonEmptyString,
-  BOT_REPO_REMOTE: z.string().min(1).default("origin"),
   REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
 });
@@ -186,15 +156,6 @@ export interface AppConfig {
     accountId: string;
     defaultBoardId?: string;
     selection: "configured" | "require-explicit";
-  };
-  campfire: {
-    baseUrl: string;
-    botKey?: string;
-    defaultRoomId?: string;
-    sessionCookie?: string;
-    selection: "configured" | "require-explicit";
-    transcriptLimit: number;
-    recentMessagesLimit: number;
   };
   github: {
     provider: GitForgeProvider;
@@ -231,28 +192,6 @@ export interface AppConfig {
     maxSessions: number;
     port: number;
     path: string;
-  };
-  bot: {
-    webhookPath: string;
-    mode: "rules" | "agent";
-    maxAgentSteps: number;
-    auth: {
-      mode: "shared-secret" | "none";
-      sharedSecret?: string;
-      headerName: string;
-    };
-  };
-  llm: {
-    baseUrl?: string;
-    model?: string;
-    apiKey?: string;
-    logIo: boolean;
-    chatCompletionsPath: string;
-    timeoutMs: number;
-  };
-  repo: {
-    rootPath?: string;
-    remoteName: string;
   };
   requestTimeoutMs: number;
   logLevel: "debug" | "info" | "warn" | "error";
@@ -310,22 +249,6 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
     ),
   });
 
-  if (
-    env.MCP_TRANSPORT === "streamable-http" &&
-    env.BOT_WEBHOOK_AUTH === "shared-secret" &&
-    !env.BOT_WEBHOOK_SHARED_SECRET
-  ) {
-    throw new Error(
-      "BOT_WEBHOOK_SHARED_SECRET is required when BOT_WEBHOOK_AUTH=shared-secret and MCP_TRANSPORT=streamable-http. Set BOT_WEBHOOK_AUTH=none only if webhook authentication is enforced outside kryo.",
-    );
-  }
-
-  if (env.BOT_MODE === "agent" && (!env.LLM_BASE_URL || !env.LLM_MODEL)) {
-    throw new Error(
-      "LLM_BASE_URL and LLM_MODEL are required when BOT_MODE=agent.",
-    );
-  }
-
   return {
     fizzy: {
       baseUrl: trimTrailingSlash(env.FIZZY_URL),
@@ -333,17 +256,6 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       accountId: env.FIZZY_ACCOUNT_ID,
       selection: env.FIZZY_BOARD_SELECTION,
       ...(env.FIZZY_BOARD_ID ? { defaultBoardId: env.FIZZY_BOARD_ID } : {}),
-    },
-    campfire: {
-      baseUrl: trimTrailingSlash(env.CAMPFIRE_URL),
-      selection: env.CAMPFIRE_ROOM_SELECTION,
-      transcriptLimit: env.CAMPFIRE_TRANSCRIPT_LIMIT,
-      recentMessagesLimit: env.CAMPFIRE_RECENT_MESSAGES_LIMIT,
-      ...(env.CAMPFIRE_BOT_KEY ? { botKey: env.CAMPFIRE_BOT_KEY } : {}),
-      ...(env.CAMPFIRE_ROOM_ID ? { defaultRoomId: env.CAMPFIRE_ROOM_ID } : {}),
-      ...(env.CAMPFIRE_SESSION_COOKIE
-        ? { sessionCookie: env.CAMPFIRE_SESSION_COOKIE }
-        : {}),
     },
     github: {
       provider: env.GIT_FORGE_PROVIDER,
@@ -384,32 +296,6 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): AppConfig {
       maxSessions: env.MCP_MAX_SESSIONS,
       port: env.MCP_PORT,
       path: env.MCP_PATH,
-    },
-    bot: {
-      webhookPath: env.BOT_WEBHOOK_PATH,
-      mode: env.BOT_MODE,
-      maxAgentSteps: env.BOT_MAX_AGENT_STEPS,
-      auth: {
-        mode: env.BOT_WEBHOOK_AUTH,
-        headerName: env.BOT_WEBHOOK_SHARED_SECRET_HEADER,
-        ...(env.BOT_WEBHOOK_SHARED_SECRET
-          ? { sharedSecret: env.BOT_WEBHOOK_SHARED_SECRET }
-          : {}),
-      },
-    },
-    llm: {
-      ...(env.LLM_BASE_URL
-        ? { baseUrl: trimTrailingSlash(env.LLM_BASE_URL) }
-        : {}),
-      ...(env.LLM_MODEL ? { model: env.LLM_MODEL } : {}),
-      ...(env.LLM_API_KEY ? { apiKey: env.LLM_API_KEY } : {}),
-      logIo: env.LLM_LOG_IO,
-      chatCompletionsPath: env.LLM_CHAT_COMPLETIONS_PATH,
-      timeoutMs: env.LLM_TIMEOUT_MS,
-    },
-    repo: {
-      ...(env.BOT_REPO_PATH ? { rootPath: env.BOT_REPO_PATH } : {}),
-      remoteName: env.BOT_REPO_REMOTE,
     },
     requestTimeoutMs: env.REQUEST_TIMEOUT_MS,
     logLevel: env.LOG_LEVEL,

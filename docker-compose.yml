@@ -16,22 +16,16 @@ services:
     image: kryo-mcp:${KRYO_IMAGE_TAG:-local}
     build:
       context: .
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     env_file:
       - ${ENV_FILE}
     restart: unless-stopped
     depends_on:
       fizzy:
         condition: service_healthy
-      campfire:
-        condition: service_healthy
       gitea:
         condition: service_healthy
     ports:
       - "3100:3100"
-    volumes:
-      - ${BOT_REPO_HOST_PATH:-.}:${BOT_REPO_MOUNT_PATH:-/workspace}
     healthcheck:
       test:
         [
@@ -143,35 +137,6 @@ services:
       timeout: 5s
       retries: 12
       start_period: 45s
-
-  campfire:
-    image: kryo-campfire:${CAMPFIRE_IMAGE_TAG:-v1.4.3-msgpack}
-    build:
-      context: ..
-      dockerfile: kryo/deploy/compose/campfire/Dockerfile
-      args:
-        APP_VERSION: ${ONCE_CAMPFIRE_VERSION:-v1.4.3}
-        GIT_REVISION: ${ONCE_CAMPFIRE_VERSION:-v1.4.3}
-        MSGPACK_VERSION: ${CAMPFIRE_MSGPACK_VERSION:-1.7.5}
-    restart: unless-stopped
-    ports:
-      - "3000:80"
-    environment:
-      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-      DISABLE_SSL: "true"
-    volumes:
-      - campfire-data:/rails/storage
-    networks:
-      default:
-        aliases:
-          - kryo-campfire
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1/up >/dev/null || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 12
-      start_period: 45s
-
   gitea:
     image: gitea/gitea@sha256:be0b89adf2fc8657df508303d919c3be33e6413605882919f702177d62960c9a
     restart: unless-stopped
@@ -199,7 +164,6 @@ services:
 
 volumes:
   fizzy-data:
-  campfire-data:
   gitea-data:
   devbox-pnpm-store:
   devbox-node-modules:

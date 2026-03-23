@@ -1,20 +1,13 @@
-import { CampfireClient } from "./adapters/campfire.js";
 import { FizzyClient } from "./adapters/fizzy.js";
 import { GitForgeClient } from "./adapters/github.js";
 import type { AppConfig } from "./config.js";
-import type { ChatModelClient } from "./inference/model-client.js";
-import { OpenAICompatibleChatClient } from "./inference/openai-chat-client.js";
-import { LocalRepoClient } from "./local-repo/client.js";
 import { Logger } from "./logger.js";
 
 export interface MissionControlServices {
   config: AppConfig;
   logger: Logger;
   fizzy: FizzyClient;
-  campfire: CampfireClient;
   github: GitForgeClient;
-  model?: ChatModelClient | undefined;
-  repo?: LocalRepoClient | undefined;
 }
 
 export function createServices(
@@ -33,17 +26,6 @@ export function createServices(
       timeoutMs: config.requestTimeoutMs,
       logger,
     }),
-    campfire: new CampfireClient({
-      baseUrl: config.campfire.baseUrl,
-      botKey: config.campfire.botKey,
-      defaultRoomId: config.campfire.defaultRoomId,
-      selection: config.campfire.selection,
-      sessionCookie: config.campfire.sessionCookie,
-      transcriptLimit: config.campfire.transcriptLimit,
-      recentMessagesLimit: config.campfire.recentMessagesLimit,
-      timeoutMs: config.requestTimeoutMs,
-      logger,
-    }),
     github: new GitForgeClient({
       provider: config.github.provider,
       apiUrl: config.github.apiUrl,
@@ -56,28 +38,5 @@ export function createServices(
       timeoutMs: config.requestTimeoutMs,
       logger,
     }),
-    ...(config.llm.baseUrl && config.llm.model
-      ? {
-          model: new OpenAICompatibleChatClient({
-            baseUrl: config.llm.baseUrl,
-            model: config.llm.model,
-            apiKey: config.llm.apiKey,
-            logIo: config.llm.logIo,
-            path: config.llm.chatCompletionsPath,
-            timeoutMs: config.llm.timeoutMs,
-            logger,
-          }),
-        }
-      : {}),
-    ...(config.repo.rootPath
-      ? {
-          repo: new LocalRepoClient({
-            rootPath: config.repo.rootPath,
-            defaultBranch: config.github.defaultBranch,
-            remoteName: config.repo.remoteName,
-            logger,
-          }),
-        }
-      : {}),
   };
 }

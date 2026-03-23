@@ -1,7 +1,6 @@
 import type { CardReference } from "../adapters/fizzy.js";
 import type { MissionControlServices } from "../runtime.js";
-import type { FizzyCard, FizzyColumn, NotificationOptions } from "../types.js";
-import { errorMessage } from "../utils/http.js";
+import type { FizzyCard, FizzyColumn } from "../types.js";
 import {
   bullet,
   heading,
@@ -71,31 +70,6 @@ export function cardDetailsMarkdown(
         )
       : "No description provided.",
   ]);
-}
-
-export async function notifyCampfireIfNeeded(
-  services: MissionControlServices,
-  message: string,
-  options: NotificationOptions = {},
-): Promise<boolean> {
-  if (options.notifyCampfire === false) {
-    return false;
-  }
-
-  try {
-    await services.campfire.postMessage({
-      body: message,
-      roomId: options.roomId,
-      roomPath: options.roomPath,
-    });
-    return true;
-  } catch (error) {
-    services.logger.warn("Campfire notification skipped.", {
-      message,
-      error: errorMessage(error),
-    });
-    return false;
-  }
 }
 
 async function resolveTarget(

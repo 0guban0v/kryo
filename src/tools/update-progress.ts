@@ -16,8 +16,7 @@ export function registerUpdateProgressTool(
     mutex,
     "update_progress",
     {
-      description:
-        "Move a Fizzy card to a target column or lifecycle state and notify Campfire with an optional status message.",
+      description: "Move a Fizzy card to a target column or lifecycle state.",
       inputSchema: {
         card_id: z
           .union([z.string(), z.number()])
@@ -33,7 +32,7 @@ export function registerUpdateProgressTool(
           .string()
           .optional()
           .describe(
-            "Optional status message to include in the Campfire notification.",
+            "Optional status message to include in the workflow result.",
           ),
       },
     },

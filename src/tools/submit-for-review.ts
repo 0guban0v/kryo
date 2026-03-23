@@ -17,7 +17,7 @@ export function registerSubmitForReviewTool(
     "submit_for_review",
     {
       description:
-        "Create a GitHub pull request for the current work, comment the PR link on the Fizzy card, move the card to Review, and notify Campfire.",
+        "Create a GitHub pull request for the current work, comment the PR link on the Fizzy card, and move the card to Review.",
       inputSchema: {
         card_id: z
           .union([z.string(), z.number()])

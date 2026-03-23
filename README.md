@@ -1,6 +1,6 @@
 # Kryo
 
-Self-hosted MCP server for AI-powered developer workflow orchestration across Fizzy, Campfire, and a GitHub-compatible git forge, designed for air-gapped or defense-sensitive environments.
+Self-hosted MCP server for developer workflow orchestration across Fizzy and a GitHub-compatible git forge, designed for air-gapped or defense-sensitive environments.
 
 ## What It Does
 
@@ -10,9 +10,8 @@ Self-hosted MCP server for AI-powered developer workflow orchestration across Fi
 - move cards through workflow states
 - report blockers and create follow-up work
 - create and merge pull requests against a GitHub-compatible forge
-- notify Campfire and respond to Campfire bot commands
 
-The server is workflow-oriented rather than a thin API wrapper. Tools compose multiple Fizzy, Campfire, and forge operations into one agent intent.
+The server is workflow-oriented rather than a thin API wrapper. Tools compose multiple Fizzy and forge operations into one intent.
 
 ## Local Bootstrap
 
@@ -27,33 +26,11 @@ The Makefile intentionally defaults `ENV_FILE` to a placeholder so Compose-backe
 
 `make deploy-all` runs the idempotent bootstrap flow, starts the core developer workflow services, and brings up the local observability profile. Installation details, seeded demo identities, login helpers, and the broader Make target reference live in the docs.
 
-For host-run inference on Apple Silicon, keep `vllm-mlx` in the repo-local `.venv` and use the top-level targets:
-
-```sh
-make llm-install
-make llm-serve
-```
-
-`make llm-install` uses the minimal [pyproject.toml](/Users/0gubanov/github/kryo/pyproject.toml) and `uv sync`. The local OpenAI-compatible endpoint is expected at `http://127.0.0.1:8000` by default.
-For background operation and server observability, use:
-
-```sh
-make llm-serve-bg
-make llm-status
-make llm-logs
-make llm-stop
-```
-
-That keeps the host model PID and appended log together under `var/llm/`.
-If you want to enable `vllm-mlx` API auth, set `LLM_API_KEY=...` for both the host model targets and Kryo.
-
 | Service | Purpose | URL |
 | --- | --- | --- |
 | MCP HTTP | MCP endpoint | [http://localhost:3100/mcp](http://localhost:3100/mcp) |
 | MCP Health | Kryo liveness check | [http://localhost:3100/up](http://localhost:3100/up) |
-| Campfire Webhook | Bot webhook endpoint | [http://localhost:3100/campfire/webhook](http://localhost:3100/campfire/webhook) |
 | Fizzy | Board UI | [http://localhost:3006](http://localhost:3006) |
-| Campfire | Chat UI | [http://localhost:3000](http://localhost:3000) |
 | Gitea | Git forge UI | [http://localhost:3007](http://localhost:3007) |
 | Grafana | Dashboards | [http://localhost:3001](http://localhost:3001) |
 | Prometheus | Metrics and query UI | [http://localhost:9090](http://localhost:9090) |
@@ -63,7 +40,4 @@ If you want to enable `vllm-mlx` API auth, set `LLM_API_KEY=...` for both the ho
 ## Docs
 
 - [Installation](docs/installation.md)
-- [Architecture](docs/architecture.md)
-- [Integrations](docs/integrations.md)
 - [Observability](docs/observability.md)
-- [Security](docs/security.md)

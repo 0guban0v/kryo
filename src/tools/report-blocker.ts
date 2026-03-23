@@ -17,7 +17,7 @@ export function registerReportBlockerTool(
     "report_blocker",
     {
       description:
-        "Move a Fizzy card into Blocked when possible, add a blocker comment with context, and notify Campfire.",
+        "Move a Fizzy card into Blocked when possible and add a blocker comment with context.",
       inputSchema: {
         card_id: z
           .union([z.string(), z.number()])

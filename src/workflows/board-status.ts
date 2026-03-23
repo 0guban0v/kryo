@@ -69,7 +69,7 @@ export async function getBoardStatus(
   services: MissionControlServices,
   boardId?: string,
 ): Promise<WorkflowResult> {
-  const resolvedBoardId = services.fizzy.resolveBoardId(boardId);
+  const resolvedBoardId = await services.fizzy.resolveBoardIdOrName(boardId);
   const workflow = services.config.workflow;
   const visibleCardLimit = services.config.limits.boardStatusVisibleCards;
   const [board, cards] = await Promise.all([
@@ -105,41 +105,4 @@ export async function getBoardStatus(
   ]);
 
   return { summary, markdown };
-}
-
-export async function getBlockedWork(
-  services: MissionControlServices,
-  boardId?: string,
-): Promise<WorkflowResult> {
-  const resolvedBoardId = services.fizzy.resolveBoardId(boardId);
-  const workflow = services.config.workflow;
-  const [board, cards] = await Promise.all([
-    services.fizzy.getBoard(resolvedBoardId),
-    services.fizzy.listBoardCards(resolvedBoardId, { sortedBy: "oldest" }),
-  ]);
-
-  const blockedCards = cards.filter(
-    (card) =>
-      card.column &&
-      card.column.name.toLowerCase() ===
-        workflow.blockedColumnName.toLowerCase(),
-  );
-
-  if (!blockedCards.length) {
-    return {
-      summary: `No cards are currently blocked on ${board.name}.`,
-      markdown: joinSections([
-        heading(`Blocked Work: ${board.name}`, 2),
-        `No cards are currently in a \`${workflow.blockedColumnName}\` column.`,
-      ]),
-    };
-  }
-
-  return {
-    summary: `${blockedCards.length} card(s) are blocked on ${board.name}.`,
-    markdown: joinSections([
-      heading(`Blocked Work: ${board.name}`, 2),
-      bullet(blockedCards.map((card) => `${cardLabel(card)} (${card.url})`)),
-    ]),
-  };
 }

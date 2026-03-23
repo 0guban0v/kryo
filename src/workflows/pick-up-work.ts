@@ -1,12 +1,7 @@
 import type { MissionControlServices } from "../runtime.js";
-import type { NotificationOptions, WorkflowResult } from "../types.js";
+import type { WorkflowResult } from "../types.js";
 import { heading, joinSections, normalizeName } from "../utils/markdown.js";
-import {
-  cardDetailsMarkdown,
-  cardLabel,
-  moveCardToTarget,
-  notifyCampfireIfNeeded,
-} from "./shared.js";
+import { cardDetailsMarkdown, cardLabel, moveCardToTarget } from "./shared.js";
 
 export interface PickUpWorkInput {
   boardId?: string | undefined;
@@ -18,9 +13,8 @@ export interface PickUpWorkInput {
 export async function pickUpWork(
   services: MissionControlServices,
   input: PickUpWorkInput,
-  options: NotificationOptions = {},
 ): Promise<WorkflowResult> {
-  const boardId = services.fizzy.resolveBoardId(input.boardId);
+  const boardId = await services.fizzy.resolveBoardIdOrName(input.boardId);
   const workflow = services.config.workflow;
   const priorityTag = input.priorityTag
     ? normalizeName(input.priorityTag)
@@ -71,12 +65,6 @@ export async function pickUpWork(
   );
 
   const summary = `Picked up ${cardLabel(moved.card)} and moved it to ${moved.destinationLabel}.`;
-
-  await notifyCampfireIfNeeded(
-    services,
-    `${summary} Assigned to ${currentUser.name}.`,
-    options,
-  );
 
   return {
     summary,

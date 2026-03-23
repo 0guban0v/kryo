@@ -47,18 +47,13 @@ deadcode: container-deadcode
 quality: container-quality
 
 bootstrap: guard-env-file
-	$(COMPOSE) up -d fizzy campfire gitea
+	$(COMPOSE) up -d fizzy gitea
 	$(RUN_WITH_ENV) ./scripts/bootstrap-fizzy-env.sh
-	$(RUN_WITH_ENV) ./scripts/bootstrap-campfire-env.sh
 	$(RUN_WITH_ENV) ./scripts/bootstrap-gitea-env.sh
 
 bootstrap-fizzy: guard-env-file
 	$(COMPOSE) up -d fizzy
 	$(RUN_WITH_ENV) ./scripts/bootstrap-fizzy-env.sh
-
-bootstrap-campfire: guard-env-file
-	$(COMPOSE) up -d campfire
-	$(RUN_WITH_ENV) ./scripts/bootstrap-campfire-env.sh
 
 bootstrap-gitea: guard-env-file
 	$(COMPOSE) up -d gitea
@@ -91,12 +86,9 @@ down: guard-env-file
 	$(COMPOSE) $(DEVBOX_PROFILE) --profile observability down
 
 # Explicit destructive reset for the full local stack. This removes Compose
-# volumes and clears host-side vllm-mlx runtime artifacts after stopping the
-# host model process if it is running.
+# volumes for the current project in addition to containers and networks.
 down-reset: guard-env-file
-	-$(MAKE) llm-stop
 	$(COMPOSE) $(DEVBOX_PROFILE) --profile observability down -v
-	rm -f var/llm/vllm-mlx.pid var/llm/vllm-mlx.log
 
 docker-prune-dangling-volumes:
 	docker volume prune -f

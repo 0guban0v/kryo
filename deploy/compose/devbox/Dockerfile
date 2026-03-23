@@ -6,4 +6,6 @@ ARG KRYO_VERSION=unknown
 
 ENV KRYO_VERSION=$KRYO_VERSION
 
+RUN apk add --no-cache git
+
 WORKDIR /workspace

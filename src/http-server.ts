@@ -62,6 +62,8 @@ export function createMissionControlHttpApp(allowedHosts: string[]): Hono {
     await next();
   });
 
+  app.get("/up", (context) => context.text("ok"));
+
   return app;
 }
 

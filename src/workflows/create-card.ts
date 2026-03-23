@@ -1,10 +1,9 @@
 import type { MissionControlServices } from "../runtime.js";
-import type { NotificationOptions, WorkflowResult } from "../types.js";
+import type { WorkflowResult } from "../types.js";
 import { heading, joinSections } from "../utils/markdown.js";
 import {
   cardDetailsMarkdown,
   cardLabel,
-  notifyCampfireIfNeeded,
   tryMoveCardToTarget,
 } from "./shared.js";
 
@@ -19,9 +18,8 @@ export interface CreateCardInput {
 export async function createCard(
   services: MissionControlServices,
   input: CreateCardInput,
-  options: NotificationOptions = {},
 ): Promise<WorkflowResult> {
-  const boardId = services.fizzy.resolveBoardId(input.boardId);
+  const boardId = await services.fizzy.resolveBoardIdOrName(input.boardId);
   let card = await services.fizzy.createCard(boardId, {
     title: input.title,
     description: input.body,
@@ -41,7 +39,6 @@ export async function createCard(
   }
 
   const summary = `Created ${cardLabel(card)} on ${card.board.name}.`;
-  await notifyCampfireIfNeeded(services, summary, options);
 
   return {
     summary,

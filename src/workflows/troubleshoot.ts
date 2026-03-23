@@ -1,6 +1,6 @@
 import type { CardReference } from "../adapters/fizzy.js";
 import type { MissionControlServices } from "../runtime.js";
-import type { NotificationOptions, WorkflowResult } from "../types.js";
+import type { WorkflowResult } from "../types.js";
 import {
   bullet,
   codeFence,
@@ -8,7 +8,7 @@ import {
   joinSections,
   truncate,
 } from "../utils/markdown.js";
-import { cardLabel, notifyCampfireIfNeeded } from "./shared.js";
+import { cardLabel } from "./shared.js";
 
 export interface TroubleshootInput {
   cardId: CardReference;
@@ -103,7 +103,6 @@ function analyzeErrorOutput(
 export async function troubleshoot(
   services: MissionControlServices,
   input: TroubleshootInput,
-  options: NotificationOptions = {},
 ): Promise<WorkflowResult> {
   const card = await services.fizzy.getCard(input.cardId);
   const analysis = analyzeErrorOutput(input.errorOutput, input.context);
@@ -121,12 +120,6 @@ export async function troubleshoot(
   await services.fizzy.addComment(card, comment);
 
   const summary = `Added troubleshooting findings to ${cardLabel(card)}.`;
-
-  await notifyCampfireIfNeeded(
-    services,
-    `${summary} Likely root cause: ${analysis.rootCause}`,
-    options,
-  );
 
   return {
     summary,

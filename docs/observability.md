@@ -41,12 +41,10 @@ Grafana credentials:
 - uniform HTTP health probes for:
   - `mcp`
   - `fizzy`
-  - `campfire`
   - `gitea`
 - container log ingestion for:
   - `mcp`
   - `fizzy`
-  - `campfire`
   - `gitea`
 
 Promtail filters Docker discovery by Compose project name. By default it uses

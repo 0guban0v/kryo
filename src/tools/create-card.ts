@@ -17,12 +17,14 @@ export function registerCreateCardTool(
     "create_card",
     {
       description:
-        "Create a new Fizzy card, optionally tag it, place it in a target column, and notify Campfire.",
+        "Create a new Fizzy card, optionally tag it, and place it in a target column.",
       inputSchema: {
         board_id: z
           .string()
           .optional()
-          .describe("Fizzy board ID. Defaults to FIZZY_BOARD_ID."),
+          .describe(
+            "Fizzy board ID or board name. Defaults to FIZZY_BOARD_ID.",
+          ),
         title: z.string().describe("Card title."),
         body: z.string().optional().describe("Optional card description."),
         column: z
