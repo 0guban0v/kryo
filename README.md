@@ -2,6 +2,30 @@
 
 Self-hosted MCP server for developer workflow automation across Fizzy and a GitHub-compatible git forge.
 
+## Workflow
+
+```mermaid
+sequenceDiagram
+  participant Agent
+  participant Kryo
+  participant Fizzy
+  participant Gitea
+
+  Agent->>Kryo: pick_up_work
+  Kryo->>Fizzy: assign card, move to In Progress
+  Kryo-->>Agent: card #1 — Add /healthz endpoint
+
+  Agent->>Kryo: submit_for_review
+  Kryo->>Gitea: open PR
+  Kryo->>Fizzy: move card to Review
+  Kryo-->>Agent: PR #12
+
+  Agent->>Kryo: complete_work
+  Kryo->>Gitea: merge PR
+  Kryo->>Fizzy: move card to Done
+  Kryo-->>Agent: done
+```
+
 ## Tools
 
 | Tool | Description |
@@ -31,5 +55,6 @@ make deploy-all ENV_FILE=yourname.env
 
 ## Docs
 
+- [Architecture](docs/architecture.md)
 - [Installation](docs/installation.md)
 - [Observability](docs/observability.md)
